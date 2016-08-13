@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html ng-app="lab.reservation.tool">
+  <head>
+    <script src="https://code.jquery.com/jquery-1.12.4.min.js"   integrity="sha256-ZosEbRLbNQzLpnKIkEdrPv7lOy9C27hHQ+Xp8a4MxAQ="   crossorigin="anonymous"></script>
+    <!-- Latest compiled and minified CSS -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">  
+    <!-- Optional theme -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap-theme.min.css" integrity="sha384-rHyoN1iRsVXV4nD0JutlnGaslCJuC7uwjduW9SVrLvRYooPp2bWYgmgJQIXwl/Sp" crossorigin="anonymous">    
+    <!-- Latest compiled and minified JavaScript -->
+    <link rel="stylesheet" href="/tools/static/resources/css/signin.css">
+    
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
+  
+    <script src="/tools/static/vendors/angularjs/angular.js"></script>
+    <script src="/tools/static/vendors/angularjs/angular-route.js"></script>
+    <script src="/tools/static/vendors/angularjs/angular-sanitize.js"></script>
+    <script src="/tools/static/vendors/angularjs/angular-cookies.js"></script>
+    <script src="/tools/static/vendors/moment/min/moment-with-locales.min.js"></script>
+
+
+    <script src="/tools/static/vendors/eonasdan-bootstrap-datetimepicker/build/js/bootstrap-datetimepicker.min.js"></script>
+    <link rel="stylesheet" href="/tools/static/vendors/eonasdan-bootstrap-datetimepicker/build/css/bootstrap-datetimepicker.min.css" />
+
+    <script src="/tools/static/resources/app.module.js"></script>
+    <script src="/tools/static/resources/app.data.js"></script>
+    <script src="/tools/static/resources/app.config.js"></script>
+
+    <script src="/tools/static/resources/layouts/index.js"></script>
+    <script src="/tools/static/resources/layouts/sign-in.js"></script>
+    <script src="/tools/static/resources/layouts/reservation.js"></script>
+
+    <script src="/tools/static/resources/services/users/services.users.js"></script>
+    <script src="/tools/static/resources/services/machines/services.machines.js"></script>
+    <script src="/tools/static/resources/services/reservations/services.reservations.js"></script>
+    <script src="/tools/static/resources/services/devices/services.devices.js"></script>
+    
+    <script src="/tools/static/resources/components/users/users.module.js"></script>
+    <script src="/tools/static/resources/components/users/list-users.directive.js"></script>
+    <script src="/tools/static/resources/components/users/add-or-update-user.directive.js"></script>
+    <script src="/tools/static/resources/components/users/toggle-user-reservation.js"></script>
+    
+    <script src="/tools/static/resources/components/machines/machines.module.js"></script>
+    <script src="/tools/static/resources/components/machines/list-machines.directive.js"></script>
+    <script src="/tools/static/resources/components/machines/add-or-update-machine.directive.js"></script>
+    
+    <script src="/tools/static/resources/components/reservations/reservations.module.js"></script>
+    <script src="/tools/static/resources/components/reservations/list-reservations.directive.js"></script>
+    <script src="/tools/static/resources/components/reservations/toggle-edit-reservation.js"></script>
+    <script src="/tools/static/resources/components/reservations/add-or-update-reservation.directive.js"></script>
+
+    <script src="/tools/static/resources/components/modal-dialog/modal-dialog.module.js"></script>
+    <script src="/tools/static/resources/components/modal-dialog/modal-dialog.directive.js"></script>
+    
+    <title>Lab Reservation Tool</title>
+  </head>
+  <body ng-controller="IndexController as vm">
+    <modal-dialog modal-title="// vm.modalTitle //" modal-message="// vm.modalMessage //" content-type="// vm.contentType //" confirm-only="vm.confirmOnly" action="vm.action()"></modal-dialog>
+    <div class="container-fluid">
+      <ng-view></ng-view>
+    </div>
+  </body>
+</html>

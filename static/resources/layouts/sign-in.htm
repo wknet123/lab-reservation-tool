@@ -1,0 +1,11 @@
+<div class="container" ng-controller="SignInController as vm">
+  <form class="form-signin" novalidate>
+    <h2 class="form-signin-heading">Please sign in</h2>
+    <label for="txtUsername" class="sr-only">Email address</label>
+    <input type="text" id="txtUsername" class="form-control" placeholder="Username" ng-model="vm.username" autofocus="">
+    <label for="inputPassword" class="sr-only">Password</label>
+    <input type="password" id="txtPassword" class="form-control" placeholder="Password" ng-model="vm.password" required="">
+    <button class="btn btn-lg btn-primary btn-block" type="button" ng-click="vm.signIn()">Sign in</button>
+  </form>
+
+</div>

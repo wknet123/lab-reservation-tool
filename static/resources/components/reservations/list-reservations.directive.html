@@ -1,0 +1,33 @@
+<add-or-update-reservation target-type="// vm.targetType //" show-modal="vm.showModal" machine-id="// vm.machineId //" reload="vm.getReservations()"></add-or-update-reservation>
+<h3>Reservations</h3>
+<style>
+.table > tbody > tr > td {
+  vertical-align: middle;
+}
+</style>
+<table class="table">
+  <thead>
+    <th width="5%">ID</th>
+    <th width="10%">Machine</th>
+    <th width="30%">Machine Info</th>
+    <th width="10%">User</th>
+    <th width="20%">Reservation Time Range</th>
+    <th width="10%">Next Reservation Block</th>
+    <th width="15%">Operation</th>
+  </thead>
+  <tbody>
+    <tr ng-repeat="m in vm.machines">
+      <td>// m.pk //</td>
+      <td><a href="javascript:void(0);" ng-click="vm.getMachineDevice(m.pk)">// m.fields.machine_name //</a></td>
+      <td>// m.fields.machine_info //</td>
+      <td>// vm.username //</td>
+      <td>// vm.reservations[$index].fields.reservation_start_time | dateL: 'YYYY-MM-DD HH:mm'//-// vm.reservations[$index].fields.reservation_end_time  | dateL: 'YYYY-MM-DD HH:mm'//</td>
+      <td>// vm.reservations[$index].fields.reservation_end_time | dateL: 'YYYY-MM-DD HH:mm'//</td>
+      <td>
+        <a href="javascript:void(0);" ng-click="vm.toEditReservation(m.pk)">
+          <span class="glyphicon glyphicon-pencil"></span>
+        </a>    
+      </td>
+    </tr>
+  </tbody>
+</table>

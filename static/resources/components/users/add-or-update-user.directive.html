@@ -1,0 +1,30 @@
+<div class="modal fade" id="modalUser" tabindex="-1"  role="dialog">
+  <div class="modal-dialog">
+    <form class="form-horizontal" novalidate>
+      <div class="modal-content">
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+          <h4 class="modal-title">// vm.modalTitle //</h4>
+        </div>      
+        <div class="modal-body">
+          <div class="form-group" ng-if="vm.targetType === 'EDIT'">
+            <label for="txtUserId" class="col-sm-2 control-label">User ID</label>
+            <div class="col-sm-10">
+              <input type="text" id="txtUserId" class="form-control" ng-model="vm.user.id" ng-disabled="true">
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="txtName" class="col-sm-2 control-label">Name</label>
+            <div class="col-sm-10">
+              <input type="text" id="txtName" class="form-control" ng-model="vm.user.name">
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-primary" id="btnOk" ng-click="vm.addOrUpdateUser(vm.user)">OK</button>
+          <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+        </div>
+      </div><!-- /.modal-content -->
+    </form>
+  </div><!-- /.modal-dialog -->
+</div><!-- /.modal -->

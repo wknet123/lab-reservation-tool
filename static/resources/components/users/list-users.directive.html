@@ -1,0 +1,20 @@
+<add-or-update-user target-type="// vm.targetType //" user-id="// vm.userId //" show-modal="vm.showModal"></add-or-update-user>
+<h3>Users</h3>
+<table class="table">
+  <thead>
+    <th>ID</th><th>Name</th><th>Operation</th>
+  </thead>
+  <tbody>
+    <tr ng-repeat="u in vm.users">
+      <td>// u.id //</td>
+      <td>// u.name //</td>
+      <td>
+        <a href="javascript:void(0);" ng-click="vm.toEditUser(u.id)"><span class="glyphicon glyphicon-pencil"></span></a>
+        <a href="javascript:void(0);" ng-click="vm.remove(u.id)"><span class="glyphicon glyphicon-trash"></span></a>
+      </td>
+    </tr>
+  </tbody>
+</table>
+<a style="display:inline-block;" class="pull-right" href="javascript:void(0);" ng-click="vm.toAddUser()">
+  <span class="glyphicon glyphicon-plus"></span> Add User
+</a>
