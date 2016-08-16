@@ -49,7 +49,7 @@
         };
         vm.contentType = 'text/plain';
         vm.confirmOnly = true;  
-        
+
         $timeout(function() {    
           $scope.$broadcast('showDialog', true);
         }, 350);

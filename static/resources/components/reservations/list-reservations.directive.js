@@ -16,20 +16,30 @@
     vm.remove = remove;
     
     vm.retrieve = retrieve;
-    vm.username = $cookies.get('username');
-
+    vm.loginUsername = $cookies.get('username');
     vm.getMachineDevice = getMachineDevice;
     vm.getConciseMachineInfo = getConciseMachineInfo;
     vm.getReservations = getReservations;
+    vm.getReservationByMachine = getReservationByMachine;
 
     vm.retrieve();
 
     vm.getReservations();
         
-    function toEditReservation(id) {
+    function toEditReservation(id, reservation, machineName) {
       vm.targetType = 'EDIT';
       vm.showModal = true;
       vm.machineId = id;
+      vm.machineName = machineName;
+
+      if(reservation && reservation.fields) {
+        vm.userId = reservation.fields.user;
+        vm.username = reservation.fields.username;
+      }else{
+        vm.userId = $cookies.get('user_id');
+        vm.username = $cookies.get('username');
+      }
+
     }
     
     function retrieve() {
@@ -56,7 +66,6 @@
 
     function getDeviceByMachineSuccess(response) {
       var device = response.data[0].fields;
-      $log.info(device);
       $scope.$emit('modalTitle', 'Machine Device Info');
       $scope.$emit('modalMessage', '<table class="table">' +
         '<tbody>' +
@@ -69,7 +78,6 @@
       $scope.$emit('contentType', 'text/html');
       $scope.$emit('confirmOnly', true);
       $scope.$emit('raiseInfo', true);
-
     }
 
     function getDeviceByMachineFailed(response) {
@@ -79,7 +87,18 @@
     function getReservations() {
       ReservationService.listAll()
         .then(getReservationByUserSuccess, getReservationByUserFailed);
-      return vm.reservationWithMachine;
+    }
+
+    function getReservationByMachine(machineId) {
+      if(angular.isDefined(vm.reservations)) {
+          for(var i in vm.reservations) {
+            var r = vm.reservations[i];
+            if(r.fields.machine == machineId) {
+              return r;
+            }
+          }
+          return null;
+      }
     }
 
     function getReservationByUserSuccess(response) {

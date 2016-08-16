@@ -28,9 +28,10 @@
     
   function dateL() {
     return function(input, pattern) {
-      var d = new Date(input || '');
-      if(d.getTime() <= 0) {return '-';}
-      return moment(d).format(pattern);
+        if(angular.isUndefined(input)) return '';
+        var d = new Date(input);
+        if(d.getTime() <= 0) {return '-';}
+        return moment(d).format(pattern);
     }
   }
   

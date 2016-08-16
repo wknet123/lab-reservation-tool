@@ -6,9 +6,9 @@
     .module('services.users', [])
     .factory('UserService', UserService);
     
-  UserService.$inject = ['Users', '$q', '$timeout', '$http'];    
+  UserService.$inject = ['$q', '$timeout', '$http'];
     
-  function UserService(Users, $q, $timeout, $http) {
+  function UserService($q, $timeout, $http) {
     return {
       'login'  : login,
       'listAll': listAll,
@@ -27,49 +27,22 @@
     }
     
     function listAll() {
-      var defer = $q.defer();
-      $timeout(function() {
-        defer.resolve(Users);
-      });
-      return defer.promise;
+      return false;
     }
     
     function getByID(id) {
-      console.log('UserService.getByID:' + id);
-      for(var i in Users) {
-        var u = Users[i];
-        if(u.id == id) {
-          return u;
-        }
-      }
-      return null;
+      return false;
     }
     
     function add(user) {
-      var lastId = Users.length > 0 ? Users[Users.length - 1].id : 0;
-      user.id = ++lastId;
-      Users.push(user);
+      return false;
     }
     
     function update(user) {
-      for(var i in Users) {
-        var u = Users[i];
-        if(u.id == user.id) {
-          u.name = user.name;
-          return true;
-        }
-      }
       return false;
     }
     
     function remove(id) {
-      for(var i in Users) {
-        var u = Users[i];
-        if(u.id == id) {
-          Users.splice(i, 1);
-          return true;
-        }
-      }
       return false;
     }
   }

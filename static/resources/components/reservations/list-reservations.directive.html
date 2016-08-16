@@ -1,30 +1,49 @@
-<add-or-update-reservation target-type="// vm.targetType //" show-modal="vm.showModal" machine-id="// vm.machineId //" reload="vm.getReservations()"></add-or-update-reservation>
-<h3>Reservations</h3>
+<add-or-update-reservation target-type="// vm.targetType //" show-modal="vm.showModal" machine-id="// vm.machineId //" machine-name="// vm.machineName //" user-id="// vm.userId //"  username="// vm.username //" reload="vm.getReservations()"></add-or-update-reservation>
+<nav class="navbar navbar-inverse navbar-fixed-top">
+  <div class="container">
+    <div class="navbar-header">
+      <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
+        <span class="sr-only">Toggle navigation</span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <a class="navbar-brand" href="#">Lab Reservation Tools</a>
+    </div>
+    <div id="navbar" class="collapse navbar-collapse">
+      <ul class="nav navbar-nav pull-right">
+        <li><a>// vm.loginUsername //</a></li>
+        <li>&nbsp;&nbsp;</li>
+        <li class="active"><a href="/tools/logout">Logout</a></li>
+      </ul>
+    </div><!--/.nav-collapse -->
+  </div>
+</nav>
 <style>
 .table > tbody > tr > td {
   vertical-align: middle;
 }
 </style>
-<table class="table">
+<table class="table" style="margin-top: 80px;">
   <thead>
     <th width="5%">ID</th>
     <th width="10%">Machine</th>
-    <th width="30%">Machine Info</th>
+    <!--th width="30%">Machine Info</th-->
     <th width="10%">User</th>
     <th width="20%">Reservation Time Range</th>
-    <th width="10%">Next Reservation Block</th>
-    <th width="15%">Operation</th>
+    <th width="20%">Next Reservation Block</th>
+    <th width="5%">Operation</th>
   </thead>
   <tbody>
     <tr ng-repeat="m in vm.machines">
       <td>// m.pk //</td>
       <td><a href="javascript:void(0);" ng-click="vm.getMachineDevice(m.pk)">// m.fields.machine_name //</a></td>
-      <td>// m.fields.machine_info //</td>
-      <td>// vm.username //</td>
-      <td>// vm.reservations[$index].fields.reservation_start_time | dateL: 'YYYY-MM-DD HH:mm'//-// vm.reservations[$index].fields.reservation_end_time  | dateL: 'YYYY-MM-DD HH:mm'//</td>
-      <td>// vm.reservations[$index].fields.reservation_end_time | dateL: 'YYYY-MM-DD HH:mm'//</td>
+      <!--td>// m.fields.machine_info //</td-->
+      <td>// vm.getReservationByMachine(m.pk).fields.username //</td>
+      <td>// vm.getReservationByMachine(m.pk).fields.reservation_start_time | dateL: 'YYYY-MM-DD HH:mm'//-// vm.getReservationByMachine(m.pk).fields.reservation_end_time | dateL: 'YYYY-MM-DD HH:mm'//</td>
+      <td>// vm.getReservationByMachine(m.pk).fields.reservation_end_time | dateL: 'YYYY-MM-DD HH:mm'//</td>
       <td>
-        <a href="javascript:void(0);" ng-click="vm.toEditReservation(m.pk)">
+        <a href="javascript:void(0);" ng-click="vm.toEditReservation(m.pk, vm.getReservationByMachine(m.pk), m.fields.machine_name)">
           <span class="glyphicon glyphicon-pencil"></span>
         </a>    
       </td>

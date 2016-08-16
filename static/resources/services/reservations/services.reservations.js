@@ -6,9 +6,9 @@
     .module('services.reservations', [])
     .factory('ReservationService', ReservationService);
   
-  ReservationService.$inject = ['Reservations', '$q', '$timeout', '$http'];
+  ReservationService.$inject = ['$q', '$timeout', '$http'];
   
-  function ReservationService(Reservations, $q, $timeout, $http) {
+  function ReservationService($q, $timeout, $http) {
     return {
   'addOrUpdate': addOrUpdate,
        'remove': remove,
@@ -16,47 +16,38 @@
  'getByMachine': getByMachine
     };
 
-    function addOrUpdate(reservation, machineId) {
+    function addOrUpdate(reservation, machineId, userId) {
       if(reservation.id) {
-        return update(reservation, machineId);
+        return update(reservation, machineId, userId);
       }
-      return add(reservation, machineId);
+      return add(reservation, machineId, userId);
     }
 
-    function add(reservation, machineId) {
-      return $http.post('/tools/reservations/' + machineId, {
+    function add(reservation, machineId, userId) {
+      return $http.post('/tools/reservations/machine/' + machineId + '/user/' + userId, {
         'reservation_start_time': reservation.reservation_start_time,
-        'reservation_end_time': reservation.reservation_end_time,
-        'machine_id': reservation.machine_id
+        'reservation_end_time': reservation.reservation_end_time
       });
     }
     
-    function update(reservation, machineId) {
-      return $http.put('/tools/reservations/' + machineId, {
+    function update(reservation, machineId, userId) {
+      return $http.put('/tools/reservations/machine/' + machineId + '/user/' + userId, {
         'reservation_start_time': reservation.reservation_start_time,
-        'reservation_end_time': reservation.reservation_end_time,
-        'machine_id': reservation.machine_id
+        'reservation_end_time': reservation.reservation_end_time
       });
     }
     
 
-    function remove(id) {
-      for(var i in Reservations) {
-        var r = Reservations[i];
-        if(r.id == id) {
-          Reservations.splice(i, 1);
-          return true;
-        }
-      }
-      return false;
+    function remove(machineId, userId) {
+      return $http.delete('/tools/reservations/machine/' + machineId + '/user/' + userId);
     }
     
     function listAll() {
       return $http.get('/tools/reservations/user');
     }
 
-    function getByMachine(machineId) {
-      return $http.get('/tools/reservations/machine/' + machineId);
+    function getByMachine(machineId, userId) {
+      return $http.get('/tools/reservations/machine/' + machineId + '/user/' + userId);
     }
   }
   

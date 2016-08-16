@@ -1,7 +1,10 @@
 from django.shortcuts import render
-from django.http import HttpResponse, HttpResponseBadRequest, HttpResponseNotAllowed, HttpResponseForbidden
+from django.http import HttpResponse, HttpResponseBadRequest, HttpResponseNotAllowed, HttpResponseForbidden, HttpResponseRedirect
+from django.core.urlresolvers import reverse
 from django.core import serializers
+
 from django.core.serializers.json import DjangoJSONEncoder
+
 from django.utils import timezone
 
 from .models import User, Machine, Device, Reservation
@@ -14,9 +17,21 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-def decode_request(obj):
+
+from collections import OrderedDict
+
+
+def decode_request(obj, **kwargs):
     raw_data = serializers.serialize('python', obj)
-    # target_data = [d['fields'] for d in raw_data]
+    if kwargs:
+        print kwargs['others']
+        i = 0
+        for r in raw_data:
+            for v in r.items():
+                for z in v:
+                    if type(z) is OrderedDict:
+                        z.update(kwargs['others'][i])
+            i += 1
     return HttpResponse(json.dumps(raw_data, cls=DjangoJSONEncoder), content_type='application/json')
 
 
@@ -49,10 +64,15 @@ def login(request):
     return HttpResponseNotAllowed()
 
 
+def logout(request):
+    request.session.clear()
+    return HttpResponseRedirect(reverse("tools:index"))
+
+
 def list_machines(request):
-    try:
-        request.session['user_id']
-    except KeyError:
+
+    session_user_id = request.session.get('user_id', 0)
+    if session_user_id == 0:
         return HttpResponseForbidden('Please login first.')
 
     if request.method == 'GET':
@@ -62,10 +82,11 @@ def list_machines(request):
 
 
 def get_machine_by_id(request, machine_id):
-    try:
-        request.session['user_id']
-    except KeyError:
+
+    session_user_id = request.session.get('user_id', 0)
+    if session_user_id == 0:
         return HttpResponseForbidden('Please login first.')
+
     if request.method == 'GET':
         try:
             machine = Machine.objects.filter(pk=machine_id)
@@ -85,75 +106,97 @@ def get_device_by_machine(request, machine_id):
     return HttpResponseNotAllowed()
 
 
-def add_or_update_reservation(request, machine_id):
-    try:
-        user_id = request.session['user_id']
-    except KeyError:
+def crud_reservation(request, machine_id, user_id):
+
+    session_user_id = request.session.get('user_id', 0)
+    if session_user_id == 0:
         return HttpResponseForbidden('Please login first.')
 
-    if request.method == 'POST':
-        try:
-            r = json.loads(request.body)
-            logger.debug(r)
-            reservation = Reservation(
-                reservation_start_time=covert_datetime(r['reservation_start_time']),
-                reservation_end_time=covert_datetime(r['reservation_end_time']),
-                machine=Machine(pk=machine_id),
-                user=User(pk=user_id),
-            )
-            reservation.save()
-            return decode_request([reservation])
-        except Exception as e:
-            logger.error('Error occurred while adding reservation: %s' % e.message)
-            return HttpResponseBadRequest()
-
-    elif request.method == 'PUT':
-        try:
-            r = json.loads(request.body)
-            reservation = Reservation.objects.filter(
-                machine=Machine(pk=machine_id),
-                user=User(pk=user_id),
-            ).update(
-                reservation_start_time=covert_datetime(r['reservation_start_time']),
-                reservation_end_time=covert_datetime(r['reservation_end_time']),
-            )
-            return HttpResponse()
-        except Exception as e:
-            logger.error('Error occurred while updating reservation: %s' % e.message)
-            return HttpResponseBadRequest()
-
-    return HttpResponseNotAllowed()
-
-
-def list_reservations(request):
-    try:
-        user_id = request.session['user_id']
-    except KeyError:
-        return HttpResponseForbidden("Please login first.")
+    logger.debug('machine_id: %s, user_id: %s, session_user_id: %s' % (machine_id, user_id, session_user_id))
 
     if request.method == 'GET':
         try:
-            reservations = Reservation.objects.filter(user=User(pk=user_id))
-            return decode_request(reservations)
+            reservation = Reservation.objects.select_related().filter(
+                machine=Machine(pk=machine_id),
+                user=User(pk=user_id),
+            )
+            users = []
+            for r in reservation:
+                u = get_user_by_id(r.user.id)
+                users.append({'username': u.username})
+            return decode_request(reservation, others=users)
+        except (KeyError, Reservation.DoesNotExist):
+            logger.error('No reservation exist.')
+            return HttpResponseBadRequest()
+
+    if session_user_id == int(user_id):
+        if request.method == 'POST':
+            try:
+                r = json.loads(request.body)
+                reservation = Reservation(
+                    reservation_start_time=covert_datetime(r['reservation_start_time']),
+                    reservation_end_time=covert_datetime(r['reservation_end_time']),
+                    machine=Machine(pk=machine_id),
+                    user=User(pk=user_id),
+                )
+                reservation.save()
+                return decode_request([reservation])
+            except Exception as e:
+                logger.error('Error occurred while adding reservation: %s' % e.message)
+                return HttpResponseBadRequest()
+        elif request.method == 'PUT':
+            try:
+                r = json.loads(request.body)
+                Reservation.objects.filter(
+                    machine=Machine(pk=machine_id),
+                    user=User(pk=user_id),
+                ).update(
+                    reservation_start_time=covert_datetime(r['reservation_start_time']),
+                    reservation_end_time=covert_datetime(r['reservation_end_time']),
+                )
+                return HttpResponse()
+            except Exception as e:
+                logger.error('Error occurred while updating reservation: %s' % e.message)
+                return HttpResponseBadRequest()
+        elif request.method == 'DELETE':
+            try:
+                reservation = Reservation.objects.get(
+                    machine=Machine(pk=machine_id),
+                    user=User(pk=user_id),
+                )
+                reservation.delete()
+                return HttpResponse()
+            except(KeyError, Reservation.DoesNotExist):
+                logger.error('No reservation exist for deletion.')
+                return HttpResponseBadRequest()
+    else:
+        return HttpResponseBadRequest("Reservation by others")
+
+
+def list_reservations(request):
+
+    session_user_id = request.session.get('user_id', 0)
+    if session_user_id == 0:
+        return HttpResponseForbidden('Please login first.')
+
+    if request.method == 'GET':
+        try:
+            reservations = Reservation.objects.select_related().filter()
+            users = []
+            for r in reservations:
+                u = get_user_by_id(r.user.id)
+                users.append({'username': u.username})
+            return decode_request(reservations, others=users)
         except (KeyError, Reservation.DoesNotExist):
             logger.error('No reservations exist.')
             return HttpResponseBadRequest()
     return HttpResponseNotAllowed()
 
 
-def get_reservation_by_machine_id(request, machine_id):
+def get_user_by_id(user_id):
     try:
-        user_id = request.session['user_id']
-    except KeyError:
-        return HttpResponseForbidden('Please login first.')
-    if request.method == 'GET':
-        try:
-            reservation = Reservation.objects.filter(
-                machine=Machine(pk=machine_id),
-                user=User(pk=user_id),
-            )
-            return decode_request(reservation)
-        except (KeyError, Reservation.DoesNotExist):
-            logger.error('No reservation exist.')
-            return HttpResponseBadRequest()
-    return HttpResponseNotAllowed()
+        user=User.objects.get(pk=user_id)
+        return user
+    except:
+        logger.error('Error occurred while getting user by ID: %d' % (id,))
+    return None

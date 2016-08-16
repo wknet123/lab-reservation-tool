@@ -39,4 +39,4 @@ class Reservation(models.Model):
 
     def __str__(self):
         return r'reservation start_time: %s end_time: %s user: %s machine: %s' % (self.reservation_start_time, self.reservation_end_time, self.user, self.machine)
-   
+

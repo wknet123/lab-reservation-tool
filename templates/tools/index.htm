@@ -35,17 +35,12 @@
     <script src="/tools/static/resources/services/devices/services.devices.js"></script>
     
     <script src="/tools/static/resources/components/users/users.module.js"></script>
-    <script src="/tools/static/resources/components/users/list-users.directive.js"></script>
-    <script src="/tools/static/resources/components/users/add-or-update-user.directive.js"></script>
-    <script src="/tools/static/resources/components/users/toggle-user-reservation.js"></script>
-    
     <script src="/tools/static/resources/components/machines/machines.module.js"></script>
     <script src="/tools/static/resources/components/machines/list-machines.directive.js"></script>
     <script src="/tools/static/resources/components/machines/add-or-update-machine.directive.js"></script>
     
     <script src="/tools/static/resources/components/reservations/reservations.module.js"></script>
     <script src="/tools/static/resources/components/reservations/list-reservations.directive.js"></script>
-    <script src="/tools/static/resources/components/reservations/toggle-edit-reservation.js"></script>
     <script src="/tools/static/resources/components/reservations/add-or-update-reservation.directive.js"></script>
 
     <script src="/tools/static/resources/components/modal-dialog/modal-dialog.module.js"></script>
@@ -55,7 +50,7 @@
   </head>
   <body ng-controller="IndexController as vm">
     <modal-dialog modal-title="// vm.modalTitle //" modal-message="// vm.modalMessage //" content-type="// vm.contentType //" confirm-only="vm.confirmOnly" action="vm.action()"></modal-dialog>
-    <div class="container-fluid">
+    <div class="container">
       <ng-view></ng-view>
     </div>
   </body>

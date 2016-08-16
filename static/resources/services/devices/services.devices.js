@@ -6,9 +6,9 @@
     .module('services.devices', [])
     .factory('DeviceService', DeviceService);
   
-  DeviceService.$inject = ['Devices', '$http', '$log'];
+  DeviceService.$inject = ['$http', '$log'];
   
-  function DeviceService(Devices, $http, $log) {
+  function DeviceService($http, $log) {
     return {
       'listAll': listAll,
       'getByID': getByID,
@@ -19,23 +19,23 @@
     };
     
     function listAll() {
-      
+      return false;
     }
         
     function getByID(id) {
-      
+      return false;
     }
     
     function add(device) {
-      
+      return false;
     }
     
     function update(id) {
-      
+      return false;
     }
     
     function remove(id) {
-      
+      return false;
     }
     
     function getByMachine(id) {
