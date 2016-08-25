@@ -5,7 +5,7 @@
     <input type="text" id="txtUsername" class="form-control" placeholder="Username" ng-model="vm.username" autofocus="">
     <label for="inputPassword" class="sr-only">Password</label>
     <input type="password" id="txtPassword" class="form-control" placeholder="Password" ng-model="vm.password" required="">
-    <button class="btn btn-lg btn-primary btn-block" type="button" ng-click="vm.signIn()">Sign in</button>
+    <button class="btn btn-lg btn-primary btn-block" type="button" ng-click="vm.signIn()" loading-progress toggle-in-progress="vm.signInTIP" hide-target="false">Sign in</button>
   </form>
 
 </div>

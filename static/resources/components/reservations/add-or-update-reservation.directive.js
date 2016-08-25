@@ -127,14 +127,14 @@
       }
 
       element.find('#fromDateTimePicker').datetimepicker({
-        format: 'YYYY-MM-DD hh:mm',
+        format: 'YYYY-MM-DD HH:mm',
         ignoreReadonly: true,
         showClose: true,
 		showClear: true
 	  });
 
       element.find('#toDateTimePicker').datetimepicker({
-        format: 'YYYY-MM-DD hh:mm',
+        format: 'YYYY-MM-DD HH:mm',
 		ignoreReadonly: true,
         showClose: true,
 	    showClear: true
@@ -142,12 +142,12 @@
       
       element.find('#fromDateTimePicker').on('dp.change', function(e) {
         element.find('#toDateTimePicker').data('DateTimePicker').minDate(e.date);
-        ctrl.pickUp({'key': 'reservation_start_time', 'value':  $filter('dateL')(e.date, 'YYYY-MM-DD hh:mm')});
+        ctrl.pickUp({'key': 'reservation_start_time', 'value':  $filter('dateL')(e.date, 'YYYY-MM-DD HH:mm')});
       });
       
       element.find('#toDateTimePicker').on('dp.change', function(e) {
         element.find('#fromDateTimePicker').data('DateTimePicker').maxDate(e.date);
-        ctrl.pickUp({'key': 'reservation_end_time', 'value': $filter('dateL')(e.date, 'YYYY-MM-DD hh:mm')});
+        ctrl.pickUp({'key': 'reservation_end_time', 'value': $filter('dateL')(e.date, 'YYYY-MM-DD HH:mm')});
       });
     }
   }

@@ -8,24 +8,28 @@
     ])
     .controller('SignInController', SignInController);
     
-  SignInController.$inject = ['$location', 'UserService', '$log'];
+  SignInController.$inject = ['$scope', '$location', 'UserService', '$log'];
   
-  function SignInController($location, UserService, $log) {
+  function SignInController($scope, $location, UserService, $log) {
     var vm = this;
     vm.signIn = signIn;
-    
+    vm.signInTIP = false;
     function signIn() {
-      console.log('username:' + vm.username);
+      vm.signInTIP = true;
       UserService.login(vm.username, vm.password)
       .then(LoginSuccess, LoginFailed);
     }
     
     function LoginSuccess(response) {
+      vm.signInTIP = false;
       $location.url('/reservation');
     }
     
     function LoginFailed(response) {
-      alert('Login failed.');
+      vm.signInTIP = false;
+      $scope.$emit('modalTitle', 'Failed to sign in');
+      $scope.$emit('modalMessage', 'Please check your username or password.');
+      $scope.$emit('raiseError', true);
     }
   }
   

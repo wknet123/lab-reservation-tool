@@ -7,7 +7,8 @@
       'ngRoute',
       'ngSanitize',
       'ngCookies',
-      'layout.index'
+      'layout.index',
+      'components.loading.progress'
     ]);
     
 })();

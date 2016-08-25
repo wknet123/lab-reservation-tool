@@ -5,21 +5,21 @@ from django.core import serializers
 
 from django.core.serializers.json import DjangoJSONEncoder
 
+from django.views.decorators.http import require_http_methods
+
 from django.utils import timezone
 
 from .models import User, Machine, Device, Reservation
 
 import json
 import datetime
+import ldap
 
 import logging
 
-
-logger = logging.getLogger(__name__)
-
-
 from collections import OrderedDict
 
+logger = logging.getLogger(__name__)
 
 def decode_request(obj, **kwargs):
     raw_data = serializers.serialize('python', obj)
@@ -44,70 +44,108 @@ def index(request):
     return render(request, 'tools/index.htm')
 
 
+Server = "ldaps://ldap1-pek2.eng.vmware.com"
+Base = "uid=kunw,ou=people,dc=vmware,dc=com"
+Scope = ldap.SCOPE_SUBTREE
+Dn = "uid=%s,ou=people,dc=vmware,dc=com"
+Filter = "(&(objectClass=*))"
+
+
+def ldap_auth(username, password):
+    try:
+        dn, secret = Dn % (username,), password
+
+        filter_attrs = ["uid", "cn", "mail"]
+
+        l = ldap.initialize(Server)
+        l.set_option(ldap.OPT_REFERRALS, 0)
+        l.protocol_version = 3
+        l.simple_bind_s(dn, secret)
+
+        r = l.search(Base, Scope, Filter, filter_attrs)
+
+        if r:
+            try:
+                u = User.objects.get(username=username)
+                _, user = l.result(r, 60)
+                name, attrs = user[0]
+            except User.DoesNotExist:
+                u = User(username=username,
+                         fullname=attrs['cn'][0],
+                         email=attrs['mail'][0])
+                u.save()
+            finally:
+                return u
+    except Exception as e:
+        logger.error('Login via LDAP failed: %s', e.message)
+        return None
+
+
+@require_http_methods(["POST"])
 def login(request):
-    if request.method == 'POST':
-        r = json.loads(request.body)
-        username = r['username']
-        password = r['password']
-        try:
-            user = User.objects.get(username=username, password=password)
-            request.session['user_id'] = user.pk
-            request.session['username'] = username
 
-            resp =  HttpResponse()
-            resp.set_cookie(key='user_id', value=user.pk)
-            resp.set_cookie(key='username', value=username)
-            return resp
+    if not request.body:
+        return HttpResponseBadRequest()
 
-        except User.DoesNotExist:
-            return HttpResponseBadRequest()
-    return HttpResponseNotAllowed()
+    r = json.loads(request.body)
+
+    username = r['username']
+    password = r['password']
+
+    user = ldap_auth(username, password)
+    if user:
+        request.session['user_id'] = user.pk
+        request.session['username'] = username
+
+        resp = HttpResponse()
+        resp.set_cookie(key='user_id', value=user.pk)
+        resp.set_cookie(key='username', value=username)
+        return resp
+    return HttpResponseForbidden()
 
 
+@require_http_methods(["GET"])
 def logout(request):
     request.session.clear()
     return HttpResponseRedirect(reverse("tools:index"))
 
 
+@require_http_methods(["GET"])
 def list_machines(request):
 
     session_user_id = request.session.get('user_id', 0)
     if session_user_id == 0:
-        return HttpResponseForbidden('Please login first.')
+        return HttpResponseRedirect(reverse("tools:index"))
 
-    if request.method == 'GET':
-        machines = Machine.objects.all()
-        return decode_request(machines)
-    return HttpResponseNotAllowed()
+    return decode_request(Machine.objects.all())
 
 
+@require_http_methods(["GET"])
 def get_machine_by_id(request, machine_id):
-
     session_user_id = request.session.get('user_id', 0)
     if session_user_id == 0:
         return HttpResponseForbidden('Please login first.')
-
-    if request.method == 'GET':
-        try:
-            machine = Machine.objects.filter(pk=machine_id)
-            return decode_request(machine)
-        except KeyError:
-            return HttpResponseBadRequest()
-    return HttpResponseNotAllowed()
+    try:
+        machine = Machine.objects.filter(pk=machine_id)
+        return decode_request(machine)
+    except KeyError:
+        return HttpResponseBadRequest()
 
 
+@require_http_methods(["GET"])
 def get_device_by_machine(request, machine_id):
-    if request.method == 'GET':
-        try:
-            device = Device.objects.filter(machine=Machine(pk=machine_id))
-        except Device.DoesNotExist:
-            return HttpResponseBadRequest()
-        return decode_request(device)
-    return HttpResponseNotAllowed()
+    session_user_id = request.session.get('user_id', 0)
+    if session_user_id == 0:
+        return HttpResponseForbidden('Please login first.')
+    try:
+        device = Device.objects.filter(machine=Machine(pk=machine_id))
+    except Device.DoesNotExist:
+        return HttpResponseBadRequest()
+    return decode_request(device)
 
 
+@require_http_methods(["GET", "POST", "PUT", "DELETE"])
 def crud_reservation(request, machine_id, user_id):
-
     session_user_id = request.session.get('user_id', 0)
     if session_user_id == 0:
         return HttpResponseForbidden('Please login first.')
@@ -164,33 +202,31 @@ def crud_reservation(request, machine_id, user_id):
                     machine=Machine(pk=machine_id),
                     user=User(pk=user_id),
                 )
-                reservation.delete()
+                if reservation:
+                    reservation.delete()
+            except Exception as e:
+                logger.error('Error occurred while deleting reservation: %s' % e.message)
+            finally:
                 return HttpResponse()
-            except(KeyError, Reservation.DoesNotExist):
-                logger.error('No reservation exist for deletion.')
-                return HttpResponseBadRequest()
     else:
         return HttpResponseBadRequest("Reservation by others")
 
 
+@require_http_methods(["GET"])
 def list_reservations(request):
-
     session_user_id = request.session.get('user_id', 0)
     if session_user_id == 0:
         return HttpResponseForbidden('Please login first.')
-
-    if request.method == 'GET':
-        try:
-            reservations = Reservation.objects.select_related().filter()
-            users = []
-            for r in reservations:
-                u = get_user_by_id(r.user.id)
-                users.append({'username': u.username})
-            return decode_request(reservations, others=users)
-        except (KeyError, Reservation.DoesNotExist):
-            logger.error('No reservations exist.')
-            return HttpResponseBadRequest()
-    return HttpResponseNotAllowed()
+    try:
+        reservations = Reservation.objects.select_related().filter()
+        users = []
+        for r in reservations:
+            u = get_user_by_id(r.user.id)
+            users.append({'username': u.username})
+        return decode_request(reservations, others=users)
+    except (KeyError, Reservation.DoesNotExist):
+        logger.error('No reservations exist.')
+        return HttpResponseBadRequest()
 
 
 def get_user_by_id(user_id):

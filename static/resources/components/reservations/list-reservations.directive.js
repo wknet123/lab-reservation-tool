@@ -65,19 +65,26 @@
     }
 
     function getDeviceByMachineSuccess(response) {
-      var device = response.data[0].fields;
-      $scope.$emit('modalTitle', 'Machine Device Info');
-      $scope.$emit('modalMessage', '<table class="table">' +
-        '<tbody>' +
-          '<tr><td>CPU</td><td>' + device.cpu + '</td></tr>' +
-          '<tr><td>Memory<val/td><td>' + device.memory + '</td></tr>' +
-          '<tr><td>HDD</td><td>' + device.hdd + '</td></tr>' +
-          '<tr><td>NIC</td><td>' + device.nic + '</td></tr>' +
-        '</tbody>' +
-        '</table>');
-      $scope.$emit('contentType', 'text/html');
-      $scope.$emit('confirmOnly', true);
-      $scope.$emit('raiseInfo', true);
+      var data = response.data[0];
+      if(data) {
+        var device = response.data[0].fields;
+        $scope.$emit('modalTitle', 'Machine Device Info');
+        $scope.$emit('modalMessage', '<table class="table">' +
+          '<tbody>' +
+            '<tr><td>CPU</td><td>' + device.cpu + '</td></tr>' +
+            '<tr><td>Memory<val/td><td>' + device.memory + '</td></tr>' +
+            '<tr><td>HDD</td><td>' + device.hdd + '</td></tr>' +
+            '<tr><td>NIC</td><td>' + device.nic + '</td></tr>' +
+          '</tbody>' +
+          '</table>');
+        $scope.$emit('contentType', 'text/html');
+        $scope.$emit('confirmOnly', true);
+        $scope.$emit('raiseInfo', true);
+      }else{
+        $scope.$emit('modalTitle', 'Error');
+        $scope.$emit('modalMessage', 'No devices exist.');
+        $scope.$emit('raiseError', true);
+      }
     }
 
     function getDeviceByMachineFailed(response) {
