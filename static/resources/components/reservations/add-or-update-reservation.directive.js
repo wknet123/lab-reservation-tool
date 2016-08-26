@@ -33,9 +33,11 @@
       'restrict': 'E',
       'templateUrl': '/tools/static/resources/components/reservations/add-or-update-reservation.directive.html',
       'scope': {
+        'targetType': '@',
         'showModal':'=',
         'username': '@',
         'machineName': '@',
+        'reservationId': '@',
         'machineId': '@',
         'userId': '@',
         'reload': '&'
@@ -50,10 +52,29 @@
     function link(scope, element, attrs, ctrl) {
       element.find('#modalReservation').on('show.bs.modal', function() {
 
-        ctrl.modalTitle = 'Edit Reservation';
+        ctrl.reservation = {};
+        ctrl.reservation.machineId = ctrl.machineId
+        ctrl.reservation.userId = ctrl.userId
+        ctrl.reservation.username = ctrl.username
+        ctrl.status = Status;
 
-        ReservationService.getByMachine(ctrl.machineId, ctrl.userId)
-            .then(getReservationByMachineSuccess, getReservationByMachineFailed);
+        var now = new Date();
+        ctrl.reservation.reservation_start_time = $filter('dateL')(now, 'YYYY-MM-DD 00:00');
+        ctrl.reservation.reservation_end_time = $filter('dateL')(now, 'YYYY-MM-DD 23:00');
+        ctrl.reservation.timeRange = ctrl.reservation.reservation_start_time + ' - ' + ctrl.reservation.reservation_end_time;
+
+        switch(ctrl.targetType) {
+        case 'ADD':
+          ctrl.modalTitle = 'Add Reservation';
+          ctrl.reservation.status = ctrl.status[0];
+          break;
+        case 'EDIT':
+          ctrl.modalTitle = 'Edit Reservation';
+          ReservationService.getReservationByID(ctrl.reservationId, ctrl.userId)
+            .then(getReservationByIDSuccess, getReservationByIDFailed);
+          break;
+        }
+
       });
 
       scope.$watch('vm.showModal', function(current) {
@@ -62,47 +83,41 @@
           ctrl.showModal = false;
         }
       });
-      
+
       ctrl.addOrUpdateReservation = addOrUpdateReservation;
 
-      function getReservationByMachineSuccess(response) {
-
-        ctrl.reservation = {};
-        ctrl.reservation.machineId = ctrl.machineId
-        ctrl.reservation.userId = ctrl.userId
-        ctrl.reservation.username = ctrl.username
-        ctrl.status = Status;
-
+      function getReservationByIDSuccess(response) {
         if(response.data.length > 0) {
           ctrl.reservation = response.data[0].fields;
           ctrl.reservation.id = response.data[0].pk;
           ctrl.reservation.machineId = ctrl.reservation.machine;
           ctrl.reservation.reservation_start_time = $filter('dateL')(ctrl.reservation.reservation_start_time, 'YYYY-MM-DD HH:mm');
           ctrl.reservation.reservation_end_time = $filter('dateL')(ctrl.reservation.reservation_end_time, 'YYYY-MM-DD HH:mm');
-        }else{
-          var now = new Date();
-          ctrl.reservation.reservation_start_time = $filter('dateL')(now, 'YYYY-MM-DD 00:00');
-          ctrl.reservation.reservation_end_time = $filter('dateL')(now, 'YYYY-MM-DD 23:00');
+          ctrl.reservation.timeRange = ctrl.reservation.reservation_start_time + ' - ' + ctrl.reservation.reservation_end_time;
+          ctrl.reservation.status = ctrl.status[0];
         }
-
-        ctrl.reservation.timeRange = ctrl.reservation.reservation_start_time + ' - ' + ctrl.reservation.reservation_end_time;
-        ctrl.reservation.status = ctrl.status[0];
       }
 
-      function getReservationByMachineFailed(response) {
+      function getReservationByIDFailed(response) {
         $log.error('Failed to get reservation by machine:' + angular.toJson(response));
       }
 
       function addOrUpdateReservation() {
-        switch(ctrl.reservation.status.id) {
-        case '1':
-          ReservationService.addOrUpdate(ctrl.reservation, ctrl.machineId, ctrl.userId)
-            .then(manipulateReservationSuccess, manipulateReservationFailed);
-          break;
-        case '2':
-          ReservationService.remove(ctrl.machineId, ctrl.userId)
-            .then(manipulateReservationSuccess, manipulateReservationFailed);
-          break;
+        if(ctrl.targetType === 'ADD') {
+           ReservationService.add(ctrl.reservation, ctrl.machineId, ctrl.userId)
+          .then(manipulateReservationSuccess, manipulateReservationFailed);
+        } else if(ctrl.targetType === 'EDIT') {
+          $log.debug('reservation status:' + ctrl.reservation.status.id);
+          switch(ctrl.reservation.status.id) {
+          case '1':
+            ReservationService.update(ctrl.reservation, ctrl.machineId, ctrl.userId)
+              .then(manipulateReservationSuccess, manipulateReservationFailed);
+            break;
+          case '2':
+            ReservationService.remove(ctrl.reservation, ctrl.userId)
+              .then(manipulateReservationSuccess, manipulateReservationFailed);
+            break;
+          }
         }
       }
 
@@ -113,15 +128,21 @@
 
       function manipulateReservationFailed(response) {
         element.find('#modalReservation').modal('hide');
-        switch(ctrl.reservation.status.id) {
-        case '1':
+
+        if(ctrl.targetType === 'ADD') {
           scope.$emit('modalTitle', 'Failed to create reservation');
-          scope.$emit('modalMessage', 'Can not reserved the machine, since it has been reserved by others.');
-          break;
-        case '2':
-          scope.$emit('modalTitle', 'Failed to create reservation');
-          scope.$emit('modalMessage', 'Can not release the machine, since you are not the reserved user currently.');
-          break;
+          scope.$emit('modalMessage', 'Can not reserved the machine, since it has been reserved at the same time.');
+        }else if(ctrl.targetType === 'EDIT') {
+          switch(ctrl.reservation.status.id) {
+          case '1':
+            scope.$emit('modalTitle', 'Failed to create reservation');
+            scope.$emit('modalMessage', 'Can not reserved the machine, since it has been reserved at the same time.');
+            break;
+          case '2':
+            scope.$emit('modalTitle', 'Failed to create reservation');
+            scope.$emit('modalMessage', 'Can not release the machine, since you are not the reserved user currently.');
+            break;
+          }
         }
         scope.$emit('raiseError', true);
       }
@@ -130,15 +151,15 @@
         format: 'YYYY-MM-DD HH:mm',
         ignoreReadonly: true,
         showClose: true,
-		showClear: true
-	  });
+		    showClear: true
+	    });
 
       element.find('#toDateTimePicker').datetimepicker({
         format: 'YYYY-MM-DD HH:mm',
-		ignoreReadonly: true,
+		    ignoreReadonly: true,
         showClose: true,
-	    showClear: true
-	  });
+	      showClear: true
+	    });
       
       element.find('#fromDateTimePicker').on('dp.change', function(e) {
         element.find('#toDateTimePicker').data('DateTimePicker').minDate(e.date);

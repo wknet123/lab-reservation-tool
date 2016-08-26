@@ -10,18 +10,12 @@
   
   function ReservationService($q, $timeout, $http) {
     return {
-  'addOrUpdate': addOrUpdate,
+          'add': add,
+       'update': update,
        'remove': remove,
       'listAll': listAll,
- 'getByMachine': getByMachine
+ 'getReservationByID': getReservationByID
     };
-
-    function addOrUpdate(reservation, machineId, userId) {
-      if(reservation.id) {
-        return update(reservation, machineId, userId);
-      }
-      return add(reservation, machineId, userId);
-    }
 
     function add(reservation, machineId, userId) {
       return $http.post('/tools/reservations/machine/' + machineId + '/user/' + userId, {
@@ -38,16 +32,16 @@
     }
     
 
-    function remove(machineId, userId) {
-      return $http.delete('/tools/reservations/machine/' + machineId + '/user/' + userId);
+    function remove(reservation, userId) {
+      return $http.delete('/tools/reservations/' + reservation.id + '/user/' + userId);
     }
     
-    function listAll() {
-      return $http.get('/tools/reservations/user');
+    function listAll(machineId) {
+      return $http.get('/tools/reservations/machine/' + machineId);
     }
 
-    function getByMachine(machineId, userId) {
-      return $http.get('/tools/reservations/machine/' + machineId + '/user/' + userId);
+    function getReservationByID(reservationId, userId) {
+      return $http.get('/tools/reservations/' + reservationId + '/user/' + userId);
     }
   }
   

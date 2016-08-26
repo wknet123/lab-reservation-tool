@@ -10,36 +10,30 @@
   
   function ListReservationsController($scope, MachineService, ReservationService, DeviceService, $log, $cookies) {
     var vm = this;
-    
-    vm.toEditReservation = toEditReservation;
-    
-    vm.remove = remove;
-    
+
+    vm.toAddOrUpdateReservation = toAddOrUpdateReservation;
     vm.retrieve = retrieve;
     vm.loginUsername = $cookies.get('username');
-    vm.getMachineDevice = getMachineDevice;
-    vm.getConciseMachineInfo = getConciseMachineInfo;
+    vm.selectMachine = selectMachine;
     vm.getReservations = getReservations;
-    vm.getReservationByMachine = getReservationByMachine;
 
     vm.retrieve();
 
-    vm.getReservations();
-        
-    function toEditReservation(id, reservation, machineName) {
-      vm.targetType = 'EDIT';
-      vm.showModal = true;
-      vm.machineId = id;
-      vm.machineName = machineName;
+    function toAddOrUpdateReservation(reservationId, targetType) {
+      vm.targetType = targetType;
+      vm.machineId = vm.selectedMachine.pk;
+      vm.machineName = vm.selectedMachine.fields.machine_name;
 
-      if(reservation && reservation.fields) {
-        vm.userId = reservation.fields.user;
-        vm.username = reservation.fields.username;
+      vm.userId = $cookies.get('user_id');
+      vm.username = $cookies.get('username');
+
+      if(vm.targetType === 'EDIT') {
+        $log.debug('reservationId:' + reservationId);
+        ReservationService.getReservationByID(reservationId, vm.userId)
+          .then(getReservationByIDSuccess, getReservationByIDFailed);
       }else{
-        vm.userId = $cookies.get('user_id');
-        vm.username = $cookies.get('username');
+        vm.showModal = true;
       }
-
     }
     
     function retrieve() {
@@ -49,76 +43,50 @@
 
     function listMachineSuccess(response) {
       vm.machines = response.data;
+      vm.selectedMachine = vm.machines[0];
+      vm.getReservations();
     }
 
     function listMachineFailed(response) {
       $log.error('Failed to list machines:' + angular.toJson(response));
     }
-        
+
+    function selectMachine(m) {
+      vm.selectedMachine = m;
+      vm.getReservations();
+    }
+
     function getMachineDevice(id) {
       DeviceService.getByMachine(id)
         .then(getDeviceByMachineSuccess, getDeviceByMachineFailed);
     }
     
-    function getConciseMachineInfo(id) {
-      return '-';
-    }
-
-    function getDeviceByMachineSuccess(response) {
-      var data = response.data[0];
-      if(data) {
-        var device = response.data[0].fields;
-        $scope.$emit('modalTitle', 'Machine Device Info');
-        $scope.$emit('modalMessage', '<table class="table">' +
-          '<tbody>' +
-            '<tr><td>CPU</td><td>' + device.cpu + '</td></tr>' +
-            '<tr><td>Memory<val/td><td>' + device.memory + '</td></tr>' +
-            '<tr><td>HDD</td><td>' + device.hdd + '</td></tr>' +
-            '<tr><td>NIC</td><td>' + device.nic + '</td></tr>' +
-          '</tbody>' +
-          '</table>');
-        $scope.$emit('contentType', 'text/html');
-        $scope.$emit('confirmOnly', true);
-        $scope.$emit('raiseInfo', true);
-      }else{
-        $scope.$emit('modalTitle', 'Error');
-        $scope.$emit('modalMessage', 'No devices exist.');
-        $scope.$emit('raiseError', true);
-      }
-    }
-
-    function getDeviceByMachineFailed(response) {
-      $log.error('Failed to get device by machine:' + angular.toJson(response));
-    }
 
     function getReservations() {
-      ReservationService.listAll()
-        .then(getReservationByUserSuccess, getReservationByUserFailed);
+      ReservationService.listAll(vm.selectedMachine.pk)
+        .then(getReservationsByMachineSuccess, getReservationsByMachineFailed);
     }
 
-    function getReservationByMachine(machineId) {
-      if(angular.isDefined(vm.reservations)) {
-          for(var i in vm.reservations) {
-            var r = vm.reservations[i];
-            if(r.fields.machine == machineId) {
-              return r;
-            }
-          }
-          return null;
-      }
+    function getReservationByIDSuccess(response) {
+      var reservation = response.data[0];
+      vm.reservationId = reservation.pk;
+      vm.userId = reservation.fields.user;
+      vm.username = reservation.fields.username;
+      vm.showModal = true;
     }
 
-    function getReservationByUserSuccess(response) {
+    function getReservationByIDFailed(response) {
+      $log.error('No reservation exist.');
+    }
+
+    function getReservationsByMachineSuccess(response) {
       vm.reservations = response.data;
     }
 
-    function getReservationByUserFailed(response) {
+    function getReservationsByMachineFailed(response) {
       $log.error('No reservations exist.');
     }
 
-    function remove(id) {
-      ReservationService.remove(id);
-    }
   }
   
   listReservations.$inject = [];

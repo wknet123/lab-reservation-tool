@@ -21,6 +21,7 @@ from collections import OrderedDict
 
 logger = logging.getLogger(__name__)
 
+
 def decode_request(obj, **kwargs):
     raw_data = serializers.serialize('python', obj)
     if kwargs:
@@ -86,7 +87,7 @@ def login(request):
 
     if not request.body:
         return HttpResponseBadRequest()
-
+    
     r = json.loads(request.body)
 
     username = r['username']
@@ -144,33 +145,27 @@ def get_device_by_machine(request, machine_id):
     return decode_request(device)
 
 
-@require_http_methods(["GET", "POST", "PUT", "DELETE"])
-def crud_reservation(request, machine_id, user_id):
+@require_http_methods(["GET", "POST", "PUT"])
+def add_or_update_reservation(request, machine_id, user_id):
+
     session_user_id = request.session.get('user_id', 0)
     if session_user_id == 0:
         return HttpResponseForbidden('Please login first.')
 
     logger.debug('machine_id: %s, user_id: %s, session_user_id: %s' % (machine_id, user_id, session_user_id))
 
-    if request.method == 'GET':
-        try:
-            reservation = Reservation.objects.select_related().filter(
-                machine=Machine(pk=machine_id),
-                user=User(pk=user_id),
-            )
-            users = []
-            for r in reservation:
-                u = get_user_by_id(r.user.id)
-                users.append({'username': u.username})
-            return decode_request(reservation, others=users)
-        except (KeyError, Reservation.DoesNotExist):
-            logger.error('No reservation exist.')
-            return HttpResponseBadRequest()
-
     if session_user_id == int(user_id):
+        r = json.loads(request.body)
+        last_reservation = Reservation.objects.filter(
+            machine=Machine(pk=machine_id),
+            reservation_start_time__lte=covert_datetime(r['reservation_end_time']),
+            reservation_end_time__gte=covert_datetime(r['reservation_start_time']),
+        )
+        if len(last_reservation) > 0:
+            return HttpResponseBadRequest("Already reserved at the same time.")
+
         if request.method == 'POST':
             try:
-                r = json.loads(request.body)
                 reservation = Reservation(
                     reservation_start_time=covert_datetime(r['reservation_start_time']),
                     reservation_end_time=covert_datetime(r['reservation_end_time']),
@@ -184,8 +179,9 @@ def crud_reservation(request, machine_id, user_id):
                 return HttpResponseBadRequest()
         elif request.method == 'PUT':
             try:
-                r = json.loads(request.body)
                 Reservation.objects.filter(
+                    reservation_start_time=covert_datetime(r['reservation_start_time']),
+                    reservation_end_time=covert_datetime(r['reservation_end_time']),
                     machine=Machine(pk=machine_id),
                     user=User(pk=user_id),
                 ).update(
@@ -196,29 +192,52 @@ def crud_reservation(request, machine_id, user_id):
             except Exception as e:
                 logger.error('Error occurred while updating reservation: %s' % e.message)
                 return HttpResponseBadRequest()
-        elif request.method == 'DELETE':
-            try:
-                reservation = Reservation.objects.get(
-                    machine=Machine(pk=machine_id),
-                    user=User(pk=user_id),
-                )
-                if reservation:
-                    reservation.delete()
-            except Exception as e:
-                logger.error('Error occurred while deleting reservation: %s' % e.message)
-            finally:
-                return HttpResponse()
     else:
-        return HttpResponseBadRequest("Reservation by others")
+        return HttpResponseNotAllowed("Reservation by others")
+
+
+@require_http_methods(["GET", "DELETE"])
+def get_or_delete_reservation(request, reservation_id, user_id):
+    session_user_id = request.session.get('user_id', 0)
+    if session_user_id == 0:
+        return HttpResponseForbidden('Please login first.')
+    logger.debug('session_user_id: %d' % (session_user_id))
+
+    if request.method == 'GET':
+        try:
+            reservation = Reservation.objects.select_related().filter(
+                pk=reservation_id
+            )
+            users = []
+            for r in reservation:
+                u = get_user_by_id(r.user.id)
+                users.append({'username': u.username})
+            return decode_request(reservation, others=users)
+        except (KeyError, Reservation.DoesNotExist):
+            logger.error('No reservation exist.')
+            return HttpResponseBadRequest()
+
+    if session_user_id == int(user_id) and request.method == 'DELETE':
+        try:
+            reservation = Reservation.objects.get(
+                pk=reservation_id)
+            if reservation:
+                reservation.delete()
+        except Exception as e:
+            logger.error('Error occurred while deleting reservation: %s' % e.message)
+        finally:
+            return HttpResponse()
+    else:
+        return HttpResponseNotAllowed("Reservation by others")
 
 
 @require_http_methods(["GET"])
-def list_reservations(request):
+def list_reservations(request, machine_id):
     session_user_id = request.session.get('user_id', 0)
     if session_user_id == 0:
         return HttpResponseForbidden('Please login first.')
     try:
-        reservations = Reservation.objects.select_related().filter()
+        reservations = Reservation.objects.select_related().filter(machine=Machine(pk=machine_id))
         users = []
         for r in reservations:
             u = get_user_by_id(r.user.id)
