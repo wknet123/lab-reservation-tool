@@ -23,6 +23,8 @@
         break;
       }
       vm.reservation.timeRange = vm.reservation.reservation_start_time +  ' - ' + vm.reservation.reservation_end_time;
+      $scope.$apply();
+
     }
   }
   
@@ -103,6 +105,13 @@
       }
 
       function addOrUpdateReservation() {
+//        if((new Date(ctrl.reservation.reservation_end_time).getTime() - new Date(ctrl.reservation.reservation_start_time).getTime()) < 0) {
+//          element.find('#modalReservation').modal('hide');
+//          scope.$emit('modalTitle', 'Failed to create reservation');
+//          scope.$emit('modalMessage', 'Reservation end time can not be earlier than start time.');
+//          scope.$emit('raiseError', true);
+//          return;
+//        }
         if(ctrl.targetType === 'ADD') {
            ReservationService.add(ctrl.reservation, ctrl.machineId, ctrl.userId)
           .then(manipulateReservationSuccess, manipulateReservationFailed);
@@ -150,24 +159,20 @@
       element.find('#fromDateTimePicker').datetimepicker({
         format: 'YYYY-MM-DD HH:mm',
         ignoreReadonly: true,
-        showClose: true,
-		    showClear: true
+        showClose: true
 	    });
 
       element.find('#toDateTimePicker').datetimepicker({
         format: 'YYYY-MM-DD HH:mm',
 		    ignoreReadonly: true,
-        showClose: true,
-	      showClear: true
+        showClose: true
 	    });
       
       element.find('#fromDateTimePicker').on('dp.change', function(e) {
-        element.find('#toDateTimePicker').data('DateTimePicker').minDate(e.date);
         ctrl.pickUp({'key': 'reservation_start_time', 'value':  $filter('dateL')(e.date, 'YYYY-MM-DD HH:mm')});
       });
       
       element.find('#toDateTimePicker').on('dp.change', function(e) {
-        element.find('#fromDateTimePicker').data('DateTimePicker').maxDate(e.date);
         ctrl.pickUp({'key': 'reservation_end_time', 'value': $filter('dateL')(e.date, 'YYYY-MM-DD HH:mm')});
       });
     }

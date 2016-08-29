@@ -27,37 +27,69 @@
 <div class="container-fluid">
   <div class="row">
     <div class="col-md-2 col-sm-3 sidebar">
+
+      <div class="input-group" style="margin-bottom: 15px;">
+        <input type="text" class="form-control" placeholder="Search for..." ng-model="vm.searchMachineName">
+        <span class="input-group-btn">
+          <button class="btn btn-default" type="button" ng-click="vm.searchMachine(vm.searchMachineName)">Go!</button>
+        </span>
+      </div><!-- /input-group -->
       <ul class="nav nav-sidebar">
         <li ng-repeat="m in vm.machines" ng-class="{active: vm.selectedMachine.pk == m.pk}"><a href="javascript:void(0);" ng-click="vm.selectMachine(m)">// m.fields.machine_name //</a></li>
       </ul>
     </div>
     <div class="col-sm-offset-3 col-md-10 col-md-offset-2 main">
-      <h1 class="page-header">// vm.selectedMachine.fields.machine_name //</h1>
-      <h2 class="sub-header">System Info</h2>
-      <h2 class="sub-header">NIC</h2>
-      <h2 class="sub-header">HBA</h2>
-      <h2 class="sub-header">Reservations</h2>
-      <table class="table" style="margin-top: 80px;">
-        <thead>
-          <th width="10%">User</th>
-          <th width="20%">Reservation Time Range</th>
-          <th width="20%">Next Reservation Block</th>
-          <th width="5%">Operation</th>
-        </thead>
-        <tbody>
-          <tr ng-repeat="r in vm.reservations">
-            <td>// r.fields.username //</td>
-            <td>// r.fields.reservation_start_time | dateL: 'YYYY-MM-DD HH:mm' //-// r.fields.reservation_end_time | dateL: 'YYYY-MM-DD HH:mm' //</td>
-            <td>// r.fields.reservation_end_time | dateL: 'YYYY-MM-DD HH:mm' //</td>
-            <td>
-              <a href="javascript:void(0);" ng-click="vm.toAddOrUpdateReservation(r.pk, 'EDIT')">
-                <span class="glyphicon glyphicon-pencil"></span>
-              </a>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-      <button class="btn btn-default" ng-click="vm.toAddOrUpdateReservation(0, 'ADD')">New Reservation</button>
+      <div>
+        <h1 class="page-header">// vm.selectedMachine.fields.machine_name || 'N/A' //</h1>
+        <!-- Nav tabs -->
+        <ul id="myTabs" class="nav nav-tabs" role="tablist">
+          <li role="presentation"><a href="#systeminfo" aria-controls="systeminfo" role="tab" data-toggle="tab">System Info</a></li>
+          <li role="presentation"><a href="#nic" aria-controls="nic" role="tab" data-toggle="tab">NIC</a></li>
+          <li role="presentation"><a href="#hba" aria-controls="hba" role="tab" data-toggle="tab">HBA</a></li>
+          <li role="presentation"><a href="#reservations" aria-controls="reservations" role="tab" data-toggle="tab">Reservations</a></li>
+        </ul>
+        <!-- Tab panes -->
+        <div class="tab-content">
+          <div role="tabpanel" class="tab-pane active" id="systeminfo">
+            <h2 class="sub-header">System Info</h2>
+          </div>
+          <div role="tabpanel" class="tab-pane" id="nic">
+            <h2 class="sub-header">NIC</h2>
+          </div>
+          <div role="tabpanel" class="tab-pane" id="hba">
+            <h2 class="sub-header">HBA</h2>
+          </div>
+          <div role="tabpanel" class="tab-pane" id="reservations">
+
+            <h2 class="sub-header">Reservations</h2>
+            <div class="panel panel-default">
+              <div class="panel-body" style="min-height: 350px; overflow-y: auto;">
+              <table class="table">
+                <thead>
+                  <th width="10%">User</th>
+                  <th width="20%">Reservation Time Range</th>
+                  <th width="20%">Next Reservation Block</th>
+                  <th width="5%">Operation</th>
+                </thead>
+                <tbody>
+                  <tr ng-repeat="r in vm.reservations">
+                    <td>// r.fields.username //</td>
+                    <td>// r.fields.reservation_start_time | dateL: 'YYYY-MM-DD HH:mm' //-// r.fields.reservation_end_time | dateL: 'YYYY-MM-DD HH:mm' //</td>
+                    <td>// r.fields.reservation_end_time | dateL: 'YYYY-MM-DD HH:mm' //</td>
+                    <td>
+                      <a href="javascript:void(0);" ng-click="vm.toAddOrUpdateReservation(r.pk, 'EDIT')">
+                        <span class="glyphicon glyphicon-pencil"></span>
+                      </a>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+              </div>
+            </div>
+            <button class="btn btn-default" ng-click="vm.toAddOrUpdateReservation(0, 'ADD')">New Reservation</button>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </div>

@@ -9,6 +9,8 @@ from django.views.decorators.http import require_http_methods
 
 from django.utils import timezone
 
+from django.db.models import Q
+
 from .models import User, Machine, Device, Reservation
 
 import json
@@ -113,12 +115,11 @@ def logout(request):
 
 @require_http_methods(["GET"])
 def list_machines(request):
-
     session_user_id = request.session.get('user_id', 0)
     if session_user_id == 0:
         return HttpResponseRedirect(reverse("tools:index"))
-
-    return decode_request(Machine.objects.all())
+    machine_name = request.GET['machine_name']
+    return decode_request(Machine.objects.filter(machine_name__contains=machine_name))
 
 
 @require_http_methods(["GET"])
@@ -145,7 +146,7 @@ def get_device_by_machine(request, machine_id):
     return decode_request(device)
 
 
-@require_http_methods(["GET", "POST", "PUT"])
+@require_http_methods(["POST", "PUT"])
 def add_or_update_reservation(request, machine_id, user_id):
 
     session_user_id = request.session.get('user_id', 0)
@@ -156,19 +157,26 @@ def add_or_update_reservation(request, machine_id, user_id):
 
     if session_user_id == int(user_id):
         r = json.loads(request.body)
-        last_reservation = Reservation.objects.filter(
-            machine=Machine(pk=machine_id),
-            reservation_start_time__lte=covert_datetime(r['reservation_end_time']),
-            reservation_end_time__gte=covert_datetime(r['reservation_start_time']),
-        )
-        if len(last_reservation) > 0:
-            return HttpResponseBadRequest("Already reserved at the same time.")
+        input_start_time = covert_datetime(r['reservation_start_time'])
+        input_end_time = covert_datetime(r['reservation_end_time'])
+
+        if input_end_time < input_start_time :
+            return HttpResponseBadRequest("End time can not be earlier than start time.")
 
         if request.method == 'POST':
             try:
+                other_reservations = Reservation.objects.filter(
+                    machine=Machine(pk=machine_id),
+                ).filter(
+                    Q(reservation_start_time__gte=input_start_time) &
+                    Q(reservation_end_time__lte=input_end_time)
+                )
+                if len(other_reservations) > 0:
+                    return HttpResponseBadRequest("Already reserved at the same time.")
+
                 reservation = Reservation(
-                    reservation_start_time=covert_datetime(r['reservation_start_time']),
-                    reservation_end_time=covert_datetime(r['reservation_end_time']),
+                    reservation_start_time=input_start_time,
+                    reservation_end_time=input_end_time,
                     machine=Machine(pk=machine_id),
                     user=User(pk=user_id),
                 )
@@ -179,14 +187,21 @@ def add_or_update_reservation(request, machine_id, user_id):
                 return HttpResponseBadRequest()
         elif request.method == 'PUT':
             try:
-                Reservation.objects.filter(
-                    reservation_start_time=covert_datetime(r['reservation_start_time']),
-                    reservation_end_time=covert_datetime(r['reservation_end_time']),
+                other_reservations = Reservation.objects.filter(
+                    ~Q(pk=r['reservation_id']),
                     machine=Machine(pk=machine_id),
-                    user=User(pk=user_id),
+                ).filter(
+                    Q(reservation_start_time__gte=input_start_time) &
+                    Q(reservation_end_time__lte=input_end_time)
+                )
+                if len(other_reservations) > 0:
+                    return HttpResponseBadRequest("Already reserved at the same time.")
+
+                Reservation.objects.filter(
+                    pk=r['reservation_id'],
                 ).update(
-                    reservation_start_time=covert_datetime(r['reservation_start_time']),
-                    reservation_end_time=covert_datetime(r['reservation_end_time']),
+                    reservation_start_time=input_start_time,
+                    reservation_end_time=input_end_time,
                 )
                 return HttpResponse()
             except Exception as e:

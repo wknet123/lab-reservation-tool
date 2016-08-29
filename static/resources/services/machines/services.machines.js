@@ -17,8 +17,12 @@
        'remove': remove
     };
     
-    function listAll() {
-      return $http.get('/tools/machines');
+    function listAll(machineName) {
+      return $http.get('/tools/machines', {
+        'params': {
+          'machine_name': machineName
+        }
+      });
     }
     
     function getByID(id) {

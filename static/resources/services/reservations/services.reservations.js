@@ -26,6 +26,7 @@
     
     function update(reservation, machineId, userId) {
       return $http.put('/tools/reservations/machine/' + machineId + '/user/' + userId, {
+        'reservation_id': reservation.id,
         'reservation_start_time': reservation.reservation_start_time,
         'reservation_end_time': reservation.reservation_end_time
       });
