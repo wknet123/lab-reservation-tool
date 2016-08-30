@@ -105,13 +105,13 @@
       }
 
       function addOrUpdateReservation() {
-//        if((new Date(ctrl.reservation.reservation_end_time).getTime() - new Date(ctrl.reservation.reservation_start_time).getTime()) < 0) {
-//          element.find('#modalReservation').modal('hide');
-//          scope.$emit('modalTitle', 'Failed to create reservation');
-//          scope.$emit('modalMessage', 'Reservation end time can not be earlier than start time.');
-//          scope.$emit('raiseError', true);
-//          return;
-//        }
+        if((new Date(ctrl.reservation.reservation_end_time).getTime() - new Date(ctrl.reservation.reservation_start_time).getTime()) < 0) {
+          element.find('#modalReservation').modal('hide');
+          scope.$emit('modalTitle', 'Failed to create reservation');
+          scope.$emit('modalMessage', 'Reservation end time can not be earlier than start time.');
+          scope.$emit('raiseError', true);
+          return;
+        }
         if(ctrl.targetType === 'ADD') {
            ReservationService.add(ctrl.reservation, ctrl.machineId, ctrl.userId)
           .then(manipulateReservationSuccess, manipulateReservationFailed);

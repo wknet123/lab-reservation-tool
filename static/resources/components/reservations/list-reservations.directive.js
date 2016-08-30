@@ -48,9 +48,6 @@
       if (vm.machines && vm.machines.length > 0) {
         vm.selectedMachine = vm.machines[0];
         vm.getReservations();
-      }else{
-        vm.selectedMachine = null;
-        vm.reservations = [];
       }
     }
 
@@ -101,6 +98,7 @@
       ctrl.postSelection();
 
       element.find('a[data-toggle="tab"]').on('shown.bs.tab', function (e) {
+
         var target = $(e.target).attr('aria-controls');
         switch(target) {
         case 'systeminfo':
@@ -123,6 +121,7 @@
 
       function selectMachine(m) {
         ctrl.selectedMachine = m;
+        ctrl.reservations = [];
         ctrl.postSelection();
       }
 
