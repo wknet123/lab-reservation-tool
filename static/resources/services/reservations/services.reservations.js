@@ -17,15 +17,15 @@
  'getReservationByID': getReservationByID
     };
 
-    function add(reservation, machineId, userId) {
-      return $http.post('/tools/reservations/machine/' + machineId + '/user/' + userId, {
+    function add(reservation, hostId, userId) {
+      return $http.post('/tools/reservations/host/' + hostId + '/user/' + userId, {
         'reservation_start_time': reservation.reservation_start_time,
         'reservation_end_time': reservation.reservation_end_time
       });
     }
     
-    function update(reservation, machineId, userId) {
-      return $http.put('/tools/reservations/machine/' + machineId + '/user/' + userId, {
+    function update(reservation, hostId, userId) {
+      return $http.put('/tools/reservations/host/' + hostId + '/user/' + userId, {
         'reservation_id': reservation.id,
         'reservation_start_time': reservation.reservation_start_time,
         'reservation_end_time': reservation.reservation_end_time
@@ -37,8 +37,8 @@
       return $http.delete('/tools/reservations/' + reservation.id + '/user/' + userId);
     }
     
-    function listAll(machineId) {
-      return $http.get('/tools/reservations/machine/' + machineId);
+    function listAll(hostId) {
+      return $http.get('/tools/reservations/host/' + hostId);
     }
 
     function getReservationByID(reservationId, userId) {

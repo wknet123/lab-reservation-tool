@@ -8,19 +8,19 @@
         </div>      
         <div class="modal-body">
           <div class="form-group">
-            <label for="selMachine" class="col-sm-3 control-label">Machine</label>
+            <label class="col-sm-3 control-label">Host</label>
             <div class="col-sm-9">
-              <label class="form-control">// vm.machineName //</label>
+              <label class="form-control">// vm.hostName //</label>
             </div>
           </div>
           <div class="form-group">
-            <label for="selUser" class="col-sm-3 control-label">User</label>
+            <label class="col-sm-3 control-label">User</label>
             <div class="col-sm-9">
               <label class="form-control">// vm.reservation.username //</label>
             </div>
           </div>
           <div class="form-group">
-            <label for="fromDatePicker" class="col-sm-3 control-label">From</label>
+            <label class="col-sm-3 control-label">From</label>
             <div class="input-group col-sm-8" id="fromDateTimePicker" style="padding-left: 15px;">
               <input class="form-control" type="text" readonly="readonly" ng-model="vm.reservation.reservation_start_time" ng-change="vm.pickUp({key:'fromDate', value: vm.reservation.start_time})">
               <div class="input-group-addon">
@@ -29,7 +29,7 @@
             </div>
           </div>
           <div class="form-group">
-            <label for="toDatePicker" class="col-sm-3 control-label">To</label>
+            <label class="col-sm-3 control-label">To</label>
             <div class="input-group col-sm-8" id="toDateTimePicker" style="padding-left: 15px;">
               <input class="form-control" type="text" readonly="readonly" ng-model="vm.reservation.reservation_end_time" ng-change="vm.pickUp({key:'toDate', value: vm.reservation_end_time})">
               <div class="input-group-addon">

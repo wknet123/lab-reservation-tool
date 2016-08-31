@@ -1,0 +1,20 @@
+<add-or-update-host target-type="// vm.targetType //" show-modal="vm.showModal" host-id="// vm.hostId //"></add-or-update-host>
+<h3>Hosts</h3>
+<table class="table">
+  <thead>
+    <th>ID</th><th>Machine</th><th>Operation</th>
+  </thead>
+  <tbody>
+    <tr ng-repeat="h in vm.hosts">
+      <td>// h.id //</td>
+      <td>// h.machine //</td>
+      <td>
+        <a href="javascript:void(0);" ng-click="vm.toEditHost(h.id)"><span class="glyphicon glyphicon-pencil"></span></a>
+        <a href="javascript:void(0);" ng-click="vm.remove(h.id)"><span class="glyphicon glyphicon-trash"></span></a>
+      </td>
+    </tr>
+  </tbody>
+</table>
+<a style="display:inline-block;" class="pull-right" href="javascript:void(0);" ng-click="vm.toAddHost()">
+  <span class="glyphicon glyphicon-plus"></span> Add Host
+</a>

@@ -11,7 +11,7 @@ from django.utils import timezone
 
 from django.db.models import Q
 
-from .models import User, Machine, Device, Reservation
+from .models import User, Reservation, Host, Nic, Hba
 
 import json
 import datetime
@@ -66,12 +66,12 @@ def ldap_auth(username, password):
         l.simple_bind_s(dn, secret)
 
         r = l.search(Base, Scope, Filter, filter_attrs)
+        _, user = l.result(r, 60)
+        _, attrs = user[0]
 
         if r:
             try:
                 u = User.objects.get(username=username)
-                _, user = l.result(r, 60)
-                name, attrs = user[0]
             except User.DoesNotExist:
                 u = User(username=username,
                          fullname=attrs['cn'][0],
@@ -114,46 +114,44 @@ def logout(request):
 
 
 @require_http_methods(["GET"])
-def list_machines(request):
+def list_host(request):
     session_user_id = request.session.get('user_id', 0)
     if session_user_id == 0:
         return HttpResponseRedirect(reverse("tools:index"))
-    machine_name = request.GET['machine_name']
-    return decode_request(Machine.objects.filter(machine_name__contains=machine_name))
+    host_name = request.GET['host_name']
+    return decode_request(Host.objects.filter(host_name__contains=host_name))
 
 
 @require_http_methods(["GET"])
-def get_machine_by_id(request, machine_id):
+def list_nic(request):
     session_user_id = request.session.get('user_id', 0)
     if session_user_id == 0:
-        return HttpResponseForbidden('Please login first.')
-    try:
-        machine = Machine.objects.filter(pk=machine_id)
-        return decode_request(machine)
-    except KeyError:
-        return HttpResponseBadRequest()
+        return HttpResponseRedirect(reverse("tools:index"))
+    host_name = request.GET['host_name']
+    if len(host_name) == 0:
+        return HttpResponseNotAllowed("Please provide host name as filter.")
+    return decode_request(Nic.objects.filter(host_name=host_name))
 
 
 @require_http_methods(["GET"])
-def get_device_by_machine(request, machine_id):
+def list_hba(request):
     session_user_id = request.session.get('user_id', 0)
     if session_user_id == 0:
-        return HttpResponseForbidden('Please login first.')
-    try:
-        device = Device.objects.filter(machine=Machine(pk=machine_id))
-    except Device.DoesNotExist:
-        return HttpResponseBadRequest()
-    return decode_request(device)
+        return HttpResponseRedirect(reverse("tools:index"))
+    host_name = request.GET['host_name']
+    if len(host_name) == 0:
+        return HttpResponseNotAllowed("Please provide host name as filter.")
+    return decode_request(Hba.objects.filter(host_name=host_name))
 
 
 @require_http_methods(["POST", "PUT"])
-def add_or_update_reservation(request, machine_id, user_id):
+def add_or_update_reservation(request, host_id, user_id):
 
     session_user_id = request.session.get('user_id', 0)
     if session_user_id == 0:
         return HttpResponseForbidden('Please login first.')
 
-    logger.debug('machine_id: %s, user_id: %s, session_user_id: %s' % (machine_id, user_id, session_user_id))
+    logger.debug('host_id: %s, user_id: %s, session_user_id: %s' % (host_id, user_id, session_user_id))
 
     if session_user_id == int(user_id):
         r = json.loads(request.body)
@@ -166,7 +164,7 @@ def add_or_update_reservation(request, machine_id, user_id):
         if request.method == 'POST':
             try:
                 other_reservations = Reservation.objects.filter(
-                    machine=Machine(pk=machine_id),
+                    host=Host(pk=host_id),
                 ).filter(
                     Q(reservation_start_time__gte=input_start_time) &
                     Q(reservation_end_time__lte=input_end_time)
@@ -177,7 +175,7 @@ def add_or_update_reservation(request, machine_id, user_id):
                 reservation = Reservation(
                     reservation_start_time=input_start_time,
                     reservation_end_time=input_end_time,
-                    machine=Machine(pk=machine_id),
+                    host=Host(pk=host_id),
                     user=User(pk=user_id),
                 )
                 reservation.save()
@@ -189,7 +187,7 @@ def add_or_update_reservation(request, machine_id, user_id):
             try:
                 other_reservations = Reservation.objects.filter(
                     ~Q(pk=r['reservation_id']),
-                    machine=Machine(pk=machine_id),
+                    host=Host(pk=host_id),
                 ).filter(
                     Q(reservation_start_time__gte=input_start_time) &
                     Q(reservation_end_time__lte=input_end_time)
@@ -247,12 +245,12 @@ def get_or_delete_reservation(request, reservation_id, user_id):
 
 
 @require_http_methods(["GET"])
-def list_reservations(request, machine_id):
+def list_reservations(request, host_id):
     session_user_id = request.session.get('user_id', 0)
     if session_user_id == 0:
         return HttpResponseForbidden('Please login first.')
     try:
-        reservations = Reservation.objects.select_related().filter(machine=Machine(pk=machine_id))
+        reservations = Reservation.objects.select_related().filter(host=Host(pk=host_id))
         users = []
         for r in reservations:
             u = get_user_by_id(r.user.id)

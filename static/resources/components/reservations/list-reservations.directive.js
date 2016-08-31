@@ -6,23 +6,25 @@
     .module('components.reservations')
     .directive('listReservations', listReservations);
     
-  ListReservationsController.$inject = ['$scope', 'MachineService', 'ReservationService', 'DeviceService', '$log', '$cookies'];
+  ListReservationsController.$inject = ['$scope', 'HostService', 'NicService', 'HbaService', 'ReservationService', '$log', '$cookies'];
   
-  function ListReservationsController($scope, MachineService, ReservationService, DeviceService, $log, $cookies) {
+  function ListReservationsController($scope, HostService, NicService, HbaService, ReservationService, $log, $cookies) {
     var vm = this;
 
     vm.toAddOrUpdateReservation = toAddOrUpdateReservation;
     vm.retrieve = retrieve;
     vm.loginUsername = $cookies.get('username');
+    vm.getNics = getNics;
+    vm.getHbas = getHbas;
     vm.getReservations = getReservations;
-    vm.searchMachine = searchMachine;
+    vm.searchHost = searchHost;
 
     vm.retrieve('');
 
     function toAddOrUpdateReservation(reservationId, targetType) {
       vm.targetType = targetType;
-      vm.machineId = vm.selectedMachine.pk;
-      vm.machineName = vm.selectedMachine.fields.machine_name;
+      vm.hostId = vm.selectedHost.pk;
+      vm.hostName = vm.selectedHost.fields.host_name;
 
       vm.userId = $cookies.get('user_id');
       vm.username = $cookies.get('username');
@@ -34,45 +36,70 @@
       vm.showModal = true;
     }
 
-    function retrieve(machineName) {
-      MachineService.listAll(machineName)
-        .then(listMachineSuccess, listMachineFailed);
+    function retrieve(hostName) {
+      HostService.listAll(hostName)
+        .then(listHostsSuccess, listHostsFailed);
     }
 
-    function searchMachine(machineName) {
-      vm.retrieve(machineName);
+    function searchHost(hostName) {
+      vm.retrieve(hostName);
     }
 
-    function listMachineSuccess(response) {
-      vm.machines = response.data;
-      if (vm.machines && vm.machines.length > 0) {
-        vm.selectedMachine = vm.machines[0];
+    function listHostsSuccess(response) {
+      vm.hosts = response.data;
+      if (vm.hosts && vm.hosts.length > 0) {
+        vm.selectedHost = vm.hosts[0];
         vm.getReservations();
       }
     }
 
-    function listMachineFailed(response) {
-      $log.error('Failed to list machines:' + angular.toJson(response));
-    }
-
-    function getMachineDevice(id) {
-      DeviceService.getByMachine(id)
-        .then(getDeviceByMachineSuccess, getDeviceByMachineFailed);
+    function listHostsFailed(response) {
+      $log.error('Failed to list hosts:' + angular.toJson(response));
     }
 
     function getReservations() {
-      if(vm.selectedMachine) {
-        ReservationService.listAll(vm.selectedMachine.pk)
-          .then(getReservationsByMachineSuccess, getReservationsByMachineFailed);
+      if(vm.selectedHost) {
+        ReservationService.listAll(vm.selectedHost.pk)
+          .then(getReservationsByHostSuccess, getReservationsByHostFailed);
       }
     }
 
-    function getReservationsByMachineSuccess(response) {
+    function getReservationsByHostSuccess(response) {
       vm.reservations = response.data;
     }
 
-    function getReservationsByMachineFailed(response) {
+    function getReservationsByHostFailed(response) {
       $log.error('No reservations exist.');
+    }
+
+    function getNics() {
+      if(vm.selectedHost) {
+        NicService.getByHostName(vm.selectedHost.fields.host_name)
+          .then(getNicByHostNameSuccess, getNicByHostNameFailed);
+      }
+    }
+
+    function getNicByHostNameSuccess(response) {
+      vm.nics = response.data;
+    }
+
+    function getNicByHostNameFailed(response) {
+      $log.error('Failed to get nics by host name:' + response.data);
+    }
+
+    function getHbas() {
+      if(vm.selectedHost) {
+        HbaService.getByHostName(vm.selectedHost.fields.host_name)
+          .then(getHbaByHostNameSuccess, getHbaByHostNameFailed);
+      }
+    }
+
+    function getHbaByHostNameSuccess(response) {
+      vm.hbas = response.data;
+    }
+
+    function getHbaByHostNameFailed(response) {
+      $log.error('Failed to get hbas by host name:' + response.data);
     }
   }
   
@@ -92,7 +119,7 @@
 
     function link(scope, element, attrs, ctrl) {
 
-      ctrl.selectMachine = selectMachine;
+      ctrl.selectHost = selectHost;
       ctrl.postSelection = postSelection;
 
       ctrl.postSelection();
@@ -104,8 +131,10 @@
         case 'systeminfo':
           break;
         case 'nic':
+          ctrl.getNics();
           break;
         case 'hba':
+          ctrl.getHbas();
           break;
         case 'reservations':
           ctrl.getReservations();
@@ -119,8 +148,8 @@
         scope.$apply();
       });
 
-      function selectMachine(m) {
-        ctrl.selectedMachine = m;
+      function selectHost(m) {
+        ctrl.selectedHost = m;
         ctrl.reservations = [];
         ctrl.postSelection();
       }
