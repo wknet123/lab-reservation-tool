@@ -1,0 +1,15 @@
+<div class="form-group">
+  <label class="col-sm-2 control-label">// vm.label //</label>
+  <div class="col-sm-3">
+    <select class="form-control" ng-model="vm.comparison" ng-options="r for r in ['=', 'LIKE', '!='] track by r"></select>
+  </div>
+  <div class="col-sm-4" style="padding-left: 0;">
+    <input type="text" class="form-control" ng-model="vm.fieldValue">
+  </div>
+  <div class="col-sm-2" ng-if="(vm.index != vm.selectedConditions.length - 1)" style="padding-left: 0; padding-right: 0;" >
+    <select class="form-control" ng-model="vm.relationOp" ng-options="c for c in ['AND', 'OR', 'NOT'] track by c"></select>
+  </div>
+  <div class="col-sm-1" ng-if="(vm.index == vm.selectedConditions.length - 1)" style="padding-left: 0;">
+    <a class="btn btn-link" href="javascript:void(0);" ng-click="vm.remove({index: vm.index})"><span class="glyphicon glyphicon-minus"></span></a>
+  </div>
+</div>

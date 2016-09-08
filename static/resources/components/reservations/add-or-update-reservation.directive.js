@@ -10,22 +10,7 @@
   
   function AddOrUpdateReservationController($scope, $log) {
     var vm = this;
-    
-    vm.pickUp = pickUp;
-    
-    function pickUp(e) {
-      switch(e.key){
-      case 'reservation_start_time':
-        vm.reservation.reservation_start_time = e.value;
-        break;
-      case 'reservation_end_time':
-        vm.reservation.reservation_end_time = e.value;
-        break;
-      }
-      vm.reservation.timeRange = vm.reservation.reservation_start_time +  ' - ' + vm.reservation.reservation_end_time;
-      $scope.$apply();
 
-    }
   }
   
   addOrUpdateReservation.$inject = ['Status', 'ReservationService', 'HostService', '$filter', 'dateLFilter', '$cookies', '$log'];
@@ -155,26 +140,6 @@
         }
         scope.$emit('raiseError', true);
       }
-
-      element.find('#fromDateTimePicker').datetimepicker({
-        format: 'YYYY-MM-DD HH:mm',
-        ignoreReadonly: true,
-        showClose: true
-	    });
-
-      element.find('#toDateTimePicker').datetimepicker({
-        format: 'YYYY-MM-DD HH:mm',
-		    ignoreReadonly: true,
-        showClose: true
-	    });
-      
-      element.find('#fromDateTimePicker').on('dp.change', function(e) {
-        ctrl.pickUp({'key': 'reservation_start_time', 'value':  $filter('dateL')(e.date, 'YYYY-MM-DD HH:mm')});
-      });
-      
-      element.find('#toDateTimePicker').on('dp.change', function(e) {
-        ctrl.pickUp({'key': 'reservation_end_time', 'value': $filter('dateL')(e.date, 'YYYY-MM-DD HH:mm')});
-      });
     }
   }
   

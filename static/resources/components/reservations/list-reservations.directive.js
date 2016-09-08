@@ -18,6 +18,7 @@
     vm.getHbas = getHbas;
     vm.getReservations = getReservations;
     vm.searchHost = searchHost;
+    vm.toAdvancedSearch = toAdvancedSearch;
 
     vm.retrieve('');
 
@@ -100,6 +101,10 @@
 
     function getHbaByHostNameFailed(response) {
       $log.error('Failed to get hbas by host name:' + response.data);
+    }
+
+    function toAdvancedSearch() {
+      vm.showAdvancedSearch = true;
     }
   }
   

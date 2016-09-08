@@ -21,21 +21,11 @@
           </div>
           <div class="form-group">
             <label class="col-sm-3 control-label">From</label>
-            <div class="input-group col-sm-8" id="fromDateTimePicker" style="padding-left: 15px;">
-              <input class="form-control" type="text" readonly="readonly" ng-model="vm.reservation.reservation_start_time" ng-change="vm.pickUp({key:'fromDate', value: vm.reservation.start_time})">
-              <div class="input-group-addon">
-                <a href="javascript:void(0);"><span class="glyphicon glyphicon-calendar"></span></a>
-              </div>
-            </div>
+            <datetime-picker picker-id="fromDatetimePicker" selected-datetime="vm.reservation.reservation_start_time" custom-class="//['col-sm-8', 'padding-datetime']//"></datetime-picker>
           </div>
           <div class="form-group">
             <label class="col-sm-3 control-label">To</label>
-            <div class="input-group col-sm-8" id="toDateTimePicker" style="padding-left: 15px;">
-              <input class="form-control" type="text" readonly="readonly" ng-model="vm.reservation.reservation_end_time" ng-change="vm.pickUp({key:'toDate', value: vm.reservation_end_time})">
-              <div class="input-group-addon">
-                <a href="javascript:void(0);"><span class="glyphicon glyphicon-calendar"></span></a>
-              </div>
-            </div>
+            <datetime-picker picker-id="toDatetimePicker" selected-datetime="vm.reservation.reservation_end_time"  custom-class="//['col-sm-8', 'padding-datetime']//"></datetime-picker>
           </div>
           <div class="form-group">
             <label for="selStatus" class="col-sm-3 control-label">Status</label>
