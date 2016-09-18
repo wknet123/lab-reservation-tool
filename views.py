@@ -11,11 +11,12 @@ from django.utils import timezone
 
 from django.db.models import Q
 
-from .models import User, Reservation, Host, Nic, Hba
+from .models import User, Reservation, Host, Nic, Hba, Profile
 
 import json
 import datetime
 import ldap
+import operator
 
 import logging
 
@@ -89,7 +90,7 @@ def login(request):
 
     if not request.body:
         return HttpResponseBadRequest()
-    
+
     r = json.loads(request.body)
 
     username = r['username']
@@ -118,8 +119,14 @@ def list_host(request):
     session_user_id = request.session.get('user_id', 0)
     if session_user_id == 0:
         return HttpResponseRedirect(reverse("tools:index"))
+
     host_name = request.GET['host_name']
-    return decode_request(Host.objects.filter(host_name__contains=host_name))
+
+    filter_options = get_profile_by_target('host', int(session_user_id), host_name)
+    filtered_results = Host.objects.filter(generate_filter(filter_options))
+
+    logger.debug(filtered_results.query)
+    return decode_request(filtered_results)
 
 
 @require_http_methods(["GET"])
@@ -130,7 +137,13 @@ def list_nic(request):
     host_name = request.GET['host_name']
     if len(host_name) == 0:
         return HttpResponseNotAllowed("Please provide host name as filter.")
-    return decode_request(Nic.objects.filter(host_name=host_name))
+
+    filter_options = get_profile_by_target('nic', int(session_user_id), host_name)
+    filtered_results = Nic.objects.filter(generate_filter(filter_options))
+
+    logger.debug(filtered_results.query)
+
+    return decode_request(filtered_results)
 
 
 @require_http_methods(["GET"])
@@ -141,7 +154,15 @@ def list_hba(request):
     host_name = request.GET['host_name']
     if len(host_name) == 0:
         return HttpResponseNotAllowed("Please provide host name as filter.")
-    return decode_request(Hba.objects.filter(host_name=host_name))
+
+    filter_options = get_profile_by_target('hba', int(session_user_id), host_name)
+    logger.debug(filter_options)
+
+    filtered_results = Hba.objects.filter(generate_filter(filter_options))
+
+    logger.debug(filtered_results.query)
+
+    return decode_request(filtered_results)
 
 
 @require_http_methods(["POST", "PUT"])
@@ -166,9 +187,16 @@ def add_or_update_reservation(request, host_id, user_id):
                 other_reservations = Reservation.objects.filter(
                     host=Host(pk=host_id),
                 ).filter(
-                    Q(reservation_start_time__gte=input_start_time) &
-                    Q(reservation_end_time__lte=input_end_time)
+                    (Q(reservation_start_time__lte=input_start_time) &
+                    Q(reservation_end_time__gte=input_end_time)) |
+                    (Q(reservation_start_time__gte=input_start_time) &
+                     Q(reservation_end_time__lte=input_end_time)) |
+                    (Q(reservation_end_time__gte=input_start_time) &
+                     Q(reservation_start_time__lte=input_end_time))
                 )
+
+                logger.debug(other_reservations.query)
+
                 if len(other_reservations) > 0:
                     return HttpResponseBadRequest("Already reserved at the same time.")
 
@@ -189,9 +217,16 @@ def add_or_update_reservation(request, host_id, user_id):
                     ~Q(pk=r['reservation_id']),
                     host=Host(pk=host_id),
                 ).filter(
-                    Q(reservation_start_time__gte=input_start_time) &
-                    Q(reservation_end_time__lte=input_end_time)
+                    (Q(reservation_start_time__lte=input_start_time) &
+                     Q(reservation_end_time__gte=input_end_time)) |
+                    (Q(reservation_start_time__gte=input_start_time) &
+                     Q(reservation_end_time__lte=input_end_time)) |
+                    (Q(reservation_end_time__gte=input_start_time) &
+                     Q(reservation_start_time__lte=input_end_time))
                 )
+
+                logger.debug(other_reservations.query)
+
                 if len(other_reservations) > 0:
                     return HttpResponseBadRequest("Already reserved at the same time.")
 
@@ -268,3 +303,62 @@ def get_user_by_id(user_id):
     except:
         logger.error('Error occurred while getting user by ID: %d' % (id,))
     return None
+
+
+@require_http_methods(["GET", "POST"])
+def get_add_or_update_profile(request):
+    session_user_id = request.session.get('user_id', 0)
+    if session_user_id == 0:
+        return HttpResponseForbidden('Please login first.')
+
+    if request.method == 'GET':
+        profile = Profile.objects.filter(user=User(pk=session_user_id))
+        return decode_request(profile)
+    else:
+        try:
+            now = datetime.datetime.now()
+            r = request.body
+            profile = Profile.objects.get(user=User(pk=session_user_id))
+            profile.filter_option = r
+            profile.update_time = now
+            profile.save()
+        except Profile.DoesNotExist:
+            Profile.objects.create(user=User(pk=session_user_id), filter_option=r, update_time=now)
+        return HttpResponse()
+    return HttpResponseBadRequest()
+
+
+def get_profile_by_target(target, user_id, host_name):
+    profile = Profile.objects.get(user=User(pk=user_id))
+    logger.debug(profile)
+    options = json.loads(profile.filter_option)['filter_option']
+
+    if target == 'host':
+        filter_options = [{'fieldName': 'host_name', 'fieldValue': host_name, 'comparison': 'LIKE'}]
+    else:
+        filter_options = [{'fieldName': 'host_name', 'fieldValue': host_name, 'comparison': '='}]
+
+    for option in options:
+        for (key, value) in option.items():
+            if key == 'group' and value == target:
+                filter_options.append(option)
+    return filter_options
+
+
+def generate_filter(filter_options):
+    filters = []
+    for option in filter_options:
+        comparison = option['comparison']
+        if comparison == '!=':
+            filters.append(~Q(**{option['fieldName']: option['fieldValue']}))
+        elif comparison == 'LIKE':
+            filters.append(Q(**{option['fieldName'] + '__contains': option['fieldValue']}))
+        else:
+            filters.append(Q(**{option['fieldName']: option['fieldValue']}))
+    return reduce(operator.and_, filters)
+
+
+
+
+
+

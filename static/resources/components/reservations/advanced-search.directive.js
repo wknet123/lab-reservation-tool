@@ -12,16 +12,77 @@
       {'name': 'host_name',  'label': 'Host Name', 'group': {'name': 'host', 'label': 'Host'}},
       {'name': 'cpu_vendor', 'label': 'CPU Vendor','group': {'name': 'host', 'label': 'Host'}},
       {'name': 'cpu_code_name', 'label': 'CPU Code Name', 'group': {'name': 'host', 'label': 'Host'}},
-      {'name': 'cpu_model',  'label': 'CPU Model', 'group': {'name': 'host', 'label': 'Host'}},
+      {'name': 'cpu_model_name',  'label': 'CPU Model Name', 'group': {'name': 'host', 'label': 'Host'}},
       {'name': 'cpu_cores',  'label': 'CPU Cores', 'group': {'name': 'host', 'label': 'Host'}},
       {'name': 'cpu_sockets','label': 'CPU Sockets', 'group': {'name': 'host', 'label': 'Host'}},
       {'name': 'memory',  'label': 'Memory', 'group': {'name': 'host', 'label': 'Host'}},
       {'name': 'total_nics', 'label': 'Total NICs','group': {'name': 'host', 'label': 'Host'}},
       {'name': 'total_hbas', 'label': 'Total HBAs','group': {'name': 'host', 'label': 'Host'}},
-      {'name': 'driver', 'label': 'Driver', 'group': {'name': 'nic', 'label': 'NIC'}},
-      {'name': 'driver', 'label': 'Driver', 'group': {'name': 'hba', 'label': 'HBA'}}
+      {'name': 'nic_driver', 'label': 'NIC Driver', 'group': {'name': 'nic', 'label': 'NIC'}},
+      {'name': 'hba_driver', 'label': 'HBA Driver', 'group': {'name': 'hba', 'label': 'HBA'}}
     ];
     return values;
+  }
+
+  var Condition = function(group, label, fieldName, comparison, fieldValue, relationOp) {
+    this.group = group;
+    this.label = label;
+    this.fieldName = fieldName;
+    this.comparison = comparison;
+    this.fieldValue = fieldValue;
+    this.relationOp = relationOp;
+  };
+
+  Condition.prototype.setGroup = function(group) {
+    this.group = group;
+  }
+
+  Condition.prototype.getGroup = function() {
+    return this.group;
+  }
+
+  Condition.prototype.setLabel = function(label) {
+    this.label = label;
+  }
+
+  Condition.prototype.getLabel = function() {
+    return this.label;
+  }
+
+  Condition.prototype.setFieldName = function(fieldName) {
+    this.fieldName = fieldName;
+  }
+
+  Condition.prototype.getFieldName = function() {
+    return this.fieldName;
+  }
+
+  Condition.prototype.setComparison = function(comparison) {
+    this.comparison = comparison;
+  }
+
+  Condition.prototype.getComparison = function() {
+    return this.comparison;
+  }
+
+  Condition.prototype.setFieldValue = function(fieldValue) {
+    this.fieldValue = fieldValue;
+  }
+
+  Condition.prototype.getFieldValue = function() {
+    return this.fieldValue;
+  }
+
+  Condition.prototype.setRelationOp = function(relationOp) {
+    this.relationOp = relationOp;
+  }
+
+  Condition.prototype.getRelationOp = function() {
+    return this.relationOp;
+  }
+
+  function createCondition(group, label, fieldName) {
+    return new Condition(group, label, fieldName, '=', '', 'AND');
   }
 
   AdvancedSearchController.$inject = ['$scope', '$log', 'filterOptions'];
@@ -31,9 +92,9 @@
     vm.filterOptions = filterOptions();
   }
 
-  advancedSearch.$inject = ['$log', '$compile'];
+  advancedSearch.$inject = ['$log', '$compile', 'ProfileService', '$window'];
 
-  function advancedSearch($log, $compile) {
+  function advancedSearch($log, $compile, ProfileService, $window) {
     var directive = {
       'restrict': 'E',
       'templateUrl': '/tools/static/resources/components/reservations/advanced-search.directive.html',
@@ -51,63 +112,16 @@
 
     function link(scope, element, attrs, ctrl) {
 
-      var Condition = function(label, fieldName, comparison, fieldValue, relationOp) {
-        this.label = label;
-        this.fieldName = fieldName;
-        this.comparison = comparison;
-        this.fieldValue = fieldValue;
-        this.relationOp = relationOp;
-      };
-
-      Condition.prototype.setLabel = function(label) {
-        this.label = label;
-      }
-
-      Condition.prototype.getLabel = function() {
-        return this.label;
-      }
-
-      Condition.prototype.setFieldName = function(fieldName) {
-        this.fieldName = fieldName;
-      }
-
-      Condition.prototype.getFieldName = function() {
-        return this.fieldName;
-      }
-
-      Condition.prototype.setComparison = function(comparison) {
-        this.comparison = comparison;
-      }
-
-      Condition.prototype.getComparison = function() {
-        return this.comparison;
-      }
-
-      Condition.prototype.setFieldValue = function(fieldValue) {
-        this.fieldValue = fieldValue;
-      }
-
-      Condition.prototype.getFieldValue = function() {
-        return this.fieldValue;
-      }
-
-      Condition.prototype.setRelationOp = function(relationOp) {
-        this.relationOp = relationOp;
-      }
-
-      Condition.prototype.getRelationOp = function() {
-        return this.relationOp;
-      }
-
-      function createCondition(label, fieldName) {
-        return new Condition(label, fieldName, '=', '', 'AND');
-      }
-
       scope.$watch('vm.showModal', function(current) {
         if(current) {
           element.find('#modalAdvancedSearch').modal('show');
           ctrl.showModal = false;
         }
+      });
+
+      element.find('#modalAdvancedSearch').on('show.bs.modal', function() {
+        ProfileService.get()
+          .then(getProfileSuccess, getProfileFailed);
       });
 
       ctrl.addCondition = addCondition;
@@ -123,8 +137,37 @@
         element.find('#divConditions').html(el);
       }
 
+      function getProfileSuccess(response) {
+
+        ctrl.conditions = [];
+        ctrl.selectedConditions = [];
+        ctrl.index = 0;
+
+        var options = angular.fromJson(response.data[0].fields.filter_option);
+
+        for(var i in options.filter_option) {
+          var option = options.filter_option[i]
+          var c = new Condition();
+          c.setGroup(option.group);
+          c.setLabel(option.label);
+          c.setFieldName(option.fieldName);
+          c.setComparison(option.comparison);
+          c.setFieldValue(option.fieldValue);
+          c.setRelationOp(option.relationOp);
+
+          ctrl.selectedConditions.push(c);
+          ctrl.conditions.push('<search-condition selected-conditions="vm.selectedConditions" index="' + ctrl.index + '" remove="vm.removeCondition({index:' + ctrl.index + '})"></search-condition>');
+          ++ctrl.index;
+          draw();
+        }
+      }
+
+      function getProfileFailed(response) {
+        $log.error('Failed to get profile.');
+      }
+
       function addCondition() {
-        ctrl.selectedConditions.push(createCondition(ctrl.currentOption.label, ctrl.currentOption.name));
+        ctrl.selectedConditions.push(createCondition(ctrl.currentOption.group.name, ctrl.currentOption.label, ctrl.currentOption.name));
         ctrl.conditions.push('<search-condition selected-conditions="vm.selectedConditions" index="' + ctrl.index + '" remove="vm.removeCondition({index:' + ctrl.index + '})"></search-condition>');
         ++ctrl.index;
         draw();
@@ -149,7 +192,21 @@
 
       function addOrUpdateConditions() {
         $log.debug(ctrl.selectedConditions);
+        ProfileService
+          .addOrUpdate({'filterOption': ctrl.selectedConditions})
+          .then(addOrUpdateProfileSuccess, addOrUpdateProfileFailed);
       }
+
+      function addOrUpdateProfileSuccess(response) {
+        $log.info('Successful Add or update profile.');
+        element.find('#modalAdvancedSearch').modal('hide');
+        $window.location.reload();
+      }
+
+      function addOrUpdateProfileFailed(response) {
+        $log.error('Failed to add or update profile.');
+      }
+
     }
   }
 

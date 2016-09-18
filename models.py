@@ -60,6 +60,15 @@ class User(models.Model):
         return r'username: %s' % self.username
 
 
+class Profile(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE, primary_key=True)
+    filter_option = models.TextField()
+    update_time = models.DateTimeField()
+
+    def __str__(self):
+        return r'profile of user filter_option: %s, last update_time: %s' % (self.filter_option, self.update_time)
+
+
 class Reservation(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     host = models.ForeignKey(Host, on_delete= models.CASCADE)
@@ -67,7 +76,7 @@ class Reservation(models.Model):
     reservation_end_time = models.DateTimeField()
 
     def __str__(self):
-        return r'reservation start_time: %s end_time: %s user: %s machine: %s' % (self.reservation_start_time, self.reservation_end_time, self.user, self.machine)
+        return r'reservation start_time: %s end_time: %s user: %s host: %s' % (self.reservation_start_time, self.reservation_end_time, self.user, self.host)
 
 
 
@@ -88,7 +97,7 @@ CREATE TABLE `test2` (
 class Nic(models.Model):
     host_name = models.CharField(max_length=50)
     vmk_name_alias = models.CharField(max_length=255)
-    driver = models.CharField(max_length=255)
+    nic_driver = models.CharField(max_length=255)
     mac_address = models.CharField(max_length=255)
     description = models.CharField(max_length=255)
     driver_version = models.CharField(max_length=255)
@@ -115,7 +124,7 @@ CREATE TABLE `test3` (
 class Hba(models.Model):
     host_name = models.CharField(max_length=50)
     vmk_name_alias = models.CharField(max_length=255)
-    driver = models.CharField(max_length=255)
+    hba_driver = models.CharField(max_length=255)
     lin_state = models.CharField(max_length=255)
     transport_identifier = models.CharField(max_length=255)
     bus_info_description = models.CharField(max_length=255)
