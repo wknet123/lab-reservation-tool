@@ -40,6 +40,10 @@
 	      scope.$apply(function() {
           ctrl.selectedDatetime = $filter('dateL')(e.date, 'YYYY-MM-DD HH:mm');
         });
+        scope.$emit('updatedDatetime', {
+          'pickerId': ctrl.pickerId,
+          'datetime': ctrl.selectedDatetime
+        });
       });
     }
   }

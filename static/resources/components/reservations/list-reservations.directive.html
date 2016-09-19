@@ -1,5 +1,5 @@
 <add-or-update-reservation target-type="// vm.targetType //" show-modal="vm.showModal" reservation-id="// vm.reservationId //" host-id="// vm.hostId //" host-name="// vm.hostName //" user-id="// vm.userId //"  username="// vm.username //" reload="vm.getReservations()"></add-or-update-reservation>
-<advanced-search show-modal="vm.showAdvancedSearch"></advanced-search>
+<advanced-search show-modal="vm.showAdvancedSearch" reservation-start-time="// vm.reservationStartTime //" reservation-end-time="// vm.reservationEndTime //"></advanced-search>
 <nav class="navbar navbar-inverse navbar-fixed-top">
   <div class="container-fluid">
     <div class="navbar-header">
@@ -19,11 +19,12 @@
         <li>
           <form class="navbar-form navbar-right">
             <div class="form-group">
-              <datetime-picker picker-id="fromSearchDatetimePicker" selected-datetime="vm.reservation_start_time"></datetime-picker>
-              <datetime-picker picker-id="toSearchDatetimePicker" selected-datetime="vm.reservation_end_time"></datetime-picker>
+              <datetime-picker picker-id="fromSearchDatetimePicker" selected-datetime="vm.reservationStartTime"></datetime-picker>
+              <datetime-picker picker-id="toSearchDatetimePicker" selected-datetime="vm.reservationEndTime"></datetime-picker>
             </div>
           </form>
         </li>
+        <li><button class="btn btn-success" style="margin: 8px 0 0 8px;" ng-click="vm.reloadProfiles()"><span class="glyphicon glyphicon-refresh"></span></button></li>
         <li><a href="javascript:void(0);" ng-click="vm.toAdvancedSearch()">Advanced Search</a></li>
         <li><a href="/tools/logout">Logout</a></li>
       </ul>

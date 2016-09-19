@@ -14,7 +14,9 @@ from django.db.models import Q
 from .models import User, Reservation, Host, Nic, Hba, Profile
 
 import json
-import datetime
+
+from datetime import datetime, timedelta
+
 import ldap
 import operator
 
@@ -39,8 +41,17 @@ def decode_request(obj, **kwargs):
     return HttpResponse(json.dumps(raw_data, cls=DjangoJSONEncoder), content_type='application/json')
 
 
+class SimpleEncoder(json.JSONEncoder):
+    def default(self, o):
+        return o.__dict__
+
+
+def simple_decode_request(raw_data):
+    return HttpResponse(json.dumps(raw_data, cls=SimpleEncoder), content_type='application/json')
+
+
 def covert_datetime(datetime_str):
-    t = datetime.datetime.strptime(datetime_str, '%Y-%m-%d %H:%M')
+    t = datetime.strptime(datetime_str, '%Y-%m-%d %H:%M')
     return timezone.make_aware(t, timezone=timezone.get_current_timezone(), is_dst=None)
 
 
@@ -78,6 +89,16 @@ def ldap_auth(username, password):
                          fullname=attrs['cn'][0],
                          email=attrs['mail'][0])
                 u.save()
+                last_inserted_user = User.objects.get(username=username)
+
+                now = datetime.now().date()
+
+                Profile.objects.create(
+                    user=last_inserted_user,
+                    filter_option=[],
+                    reservation_start_time=now - timedelta(days=10),
+                    reservation_end_time=now + timedelta(days=10),
+                    update_time=now)
             finally:
                 return u
     except Exception as e:
@@ -93,8 +114,11 @@ def login(request):
 
     r = json.loads(request.body)
 
-    username = r['username']
-    password = r['password']
+    if 'username' in r and 'password' in r:
+        username = r['username']
+        password = r['password']
+    else:
+        return HttpResponseBadRequest()
 
     user = ldap_auth(username, password)
     if user:
@@ -123,10 +147,32 @@ def list_host(request):
     host_name = request.GET['host_name']
 
     filter_options = get_profile_by_target('host', int(session_user_id), host_name)
-    filtered_results = Host.objects.filter(generate_filter(filter_options))
+    filtered_host_results = Host.objects.filter(generate_filter(filter_options))
+    host = get_host_from_list(filtered_host_results)
 
-    logger.debug(filtered_results.query)
+    filter_nic_options = get_profile_by_target('nic', int(session_user_id), host_name)
+    filtered_nic_results = Nic.objects.filter(generate_filter(filter_nic_options))
+    host_in_nic = get_host_from_list(filtered_nic_results)
+
+    filter_hba_options = get_profile_by_target('hba', int(session_user_id), host_name)
+    filtered_hba_results = Hba.objects.filter(generate_filter(filter_hba_options))
+    host_in_hba = get_host_from_list(filtered_hba_results)
+
+    hosts = host.intersection(host_in_nic.intersection(host_in_hba))
+
+    filtered_results = []
+    for filtered_host in filtered_host_results:
+        if filtered_host.host_name in hosts:
+            filtered_results.append(filtered_host)
+
     return decode_request(filtered_results)
+
+
+def get_host_from_list(results):
+    hosts = []
+    for r in results:
+        hosts.append(r.host_name)
+    return set(hosts)
 
 
 @require_http_methods(["GET"])
@@ -195,8 +241,6 @@ def add_or_update_reservation(request, host_id, user_id):
                      Q(reservation_start_time__lte=input_end_time))
                 )
 
-                logger.debug(other_reservations.query)
-
                 if len(other_reservations) > 0:
                     return HttpResponseBadRequest("Already reserved at the same time.")
 
@@ -224,8 +268,6 @@ def add_or_update_reservation(request, host_id, user_id):
                     (Q(reservation_end_time__gte=input_start_time) &
                      Q(reservation_start_time__lte=input_end_time))
                 )
-
-                logger.debug(other_reservations.query)
 
                 if len(other_reservations) > 0:
                     return HttpResponseBadRequest("Already reserved at the same time.")
@@ -312,36 +354,40 @@ def get_add_or_update_profile(request):
         return HttpResponseForbidden('Please login first.')
 
     if request.method == 'GET':
-        profile = Profile.objects.filter(user=User(pk=session_user_id))
-        return decode_request(profile)
+        profile = Profile.objects.get(user=User(pk=session_user_id))
+        simple_result = {
+            'filter_option': eval(profile.filter_option),
+            'reservation_start_time': profile.reservation_start_time.strftime('%Y-%m-%d %H:%M'),
+            'reservation_end_time': profile.reservation_end_time.strftime('%Y-%m-%d %H:%M')
+        }
+        return simple_decode_request(simple_result)
     else:
-        try:
-            now = datetime.datetime.now()
-            r = request.body
-            profile = Profile.objects.get(user=User(pk=session_user_id))
-            profile.filter_option = r
-            profile.update_time = now
-            profile.save()
-        except Profile.DoesNotExist:
-            Profile.objects.create(user=User(pk=session_user_id), filter_option=r, update_time=now)
+        now = datetime.now()
+        r = json.loads(request.body)
+        logger.debug(r)
+        profile = Profile.objects.get(user=User(pk=session_user_id))
+        if 'filter_option' in r:
+            profile.filter_option = r['filter_option']
+        elif ('reservation_start_time' in r) or ('reservation_end_time' in r):
+            profile.reservation_start_time = r['reservation_start_time']
+            profile.reservation_end_time = r['reservation_end_time']
+
+        profile.update_time = now
+        profile.save()
+
         return HttpResponse()
     return HttpResponseBadRequest()
 
 
 def get_profile_by_target(target, user_id, host_name):
     profile = Profile.objects.get(user=User(pk=user_id))
-    logger.debug(profile)
-    options = json.loads(profile.filter_option)['filter_option']
-
-    if target == 'host':
-        filter_options = [{'fieldName': 'host_name', 'fieldValue': host_name, 'comparison': 'LIKE'}]
-    else:
-        filter_options = [{'fieldName': 'host_name', 'fieldValue': host_name, 'comparison': '='}]
-
+    options = eval(profile.filter_option)
+    filter_options = [{"fieldName": "host_name", "fieldValue": host_name, "comparison": "LIKE"}]
     for option in options:
-        for (key, value) in option.items():
-            if key == 'group' and value == target:
-                filter_options.append(option)
+        if option['group'] == target:
+            filter_options.append(option)
+
+    logger.debug(filter_options)
     return filter_options
 
 

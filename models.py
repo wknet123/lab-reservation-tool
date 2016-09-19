@@ -63,10 +63,12 @@ class User(models.Model):
 class Profile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, primary_key=True)
     filter_option = models.TextField()
+    reservation_start_time = models.DateTimeField()
+    reservation_end_time = models.DateTimeField()
     update_time = models.DateTimeField()
 
     def __str__(self):
-        return r'profile of user filter_option: %s, last update_time: %s' % (self.filter_option, self.update_time)
+        return r'profile of user filter_option: %s, start_time: %s, end_time: %s, last update_time: %s' % (self.filter_option, self.reservation_start_time, self.reservation_end_time, self.update_time)
 
 
 class Reservation(models.Model):
@@ -104,8 +106,7 @@ class Nic(models.Model):
     firmware = models.CharField(max_length=255)
 
     def __str__(self):
-        return 'host_name: %s, vmk_name_alias: %s, driver: %s' % (self.host_name, self.vmk_name_alias, self.driver)
-
+        return 'host_name: %s, vmk_name_alias: %s, driver: %s' % (self.host_name, self.vmk_name_alias, self.nic_driver)
 
 
 '''

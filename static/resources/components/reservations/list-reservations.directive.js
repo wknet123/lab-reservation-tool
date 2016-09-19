@@ -6,9 +6,9 @@
     .module('components.reservations')
     .directive('listReservations', listReservations);
     
-  ListReservationsController.$inject = ['$scope', 'HostService', 'NicService', 'HbaService', 'ReservationService', '$log', '$cookies'];
+  ListReservationsController.$inject = ['$scope', 'HostService', 'NicService', 'HbaService', 'ReservationService', 'ProfileService', '$log', '$cookies', '$filter', 'dateFilter', '$window'];
   
-  function ListReservationsController($scope, HostService, NicService, HbaService, ReservationService, $log, $cookies) {
+  function ListReservationsController($scope, HostService, NicService, HbaService, ReservationService, ProfileService, $log, $cookies, $filter, dateFilter, $window) {
     var vm = this;
 
     vm.toAddOrUpdateReservation = toAddOrUpdateReservation;
@@ -21,6 +21,23 @@
     vm.toAdvancedSearch = toAdvancedSearch;
 
     vm.retrieve('');
+
+    ProfileService.get()
+      .then(getProfileSuccess, getProfileFailed);
+
+    $scope.$on('updatedDatetime', function(e, val) {
+      if(val) {
+        var target = val.pickerId;
+        switch(target) {
+        case 'fromSearchDatetimePicker':
+          vm.reservationStartTime = val.datetime; break;
+        case 'toSearchDatetimePicker':
+          vm.reservationEndTime = val.datetime; break;
+        }
+      }
+    });
+
+    vm.reloadProfiles = reloadProfiles;
 
     function toAddOrUpdateReservation(reservationId, targetType) {
       vm.targetType = targetType;
@@ -106,6 +123,49 @@
     function toAdvancedSearch() {
       vm.showAdvancedSearch = true;
     }
+
+    function getDateStr(date, deltaOfDays, deltaOfHours) {
+      var d = new Date(date);
+      var target = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+
+      if(!deltaOfDays) {
+        deltaOfDays = 0;
+      }
+      if(!deltaOfHours) {
+        deltaOfHours = 0;
+      }
+
+      target = new Date(target.getTime() + 1000 * 60 * 60 *24 * deltaOfDays + 1000 * 60 * 60 * deltaOfHours);
+
+      return $filter('dateL')(target, 'YYYY-MM-DD HH:mm');
+    }
+
+    function getProfileSuccess(response) {
+      var profile = response.data;
+      $log.debug(profile.reservation_start_time);
+      vm.reservationStartTime= getDateStr(profile.reservation_start_time);
+      vm.reservationEndTime = getDateStr(profile.reservation_end_time, 0, 23);
+    }
+
+    function getProfileFailed(response) {
+      $log.error('Failed to get profile.');
+    }
+
+    function reloadProfiles() {
+      ProfileService
+        .addOrUpdate({'reservationStartTime': vm.reservationStartTime, 'reservationEndTime': vm.reservationEndTime})
+        .then(addOrUpdateProfileSuccess, addOrUpdateProfileFailed);
+    }
+
+    function addOrUpdateProfileSuccess(response) {
+      $log.debug('Successful update profile.');
+      $window.location.reload();
+    }
+
+    function addOrUpdateProfileFailed(response) {
+      $log.debug('Failed to update profile.');
+    }
+
   }
   
   listReservations.$inject = [];

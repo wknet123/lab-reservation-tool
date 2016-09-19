@@ -20,7 +20,9 @@
 
     function addOrUpdate(profile) {
       return $http.post('/tools/profiles', {
-        'filter_option': profile.filterOption
+        'filter_option': profile.filterOption,
+        'reservation_start_time': profile.reservationStartTime,
+        'reservation_end_time': profile.reservationEndTime
       });
     }
   }

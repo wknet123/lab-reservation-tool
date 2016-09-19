@@ -85,6 +85,10 @@
     return new Condition(group, label, fieldName, '=', '', 'AND');
   }
 
+  function createConditionWithValue(group, fieldName, fieldValue) {
+    return new Condition(group, fieldName, fieldName, '=', fieldValue, 'AND');
+  }
+
   AdvancedSearchController.$inject = ['$scope', '$log', 'filterOptions'];
 
   function AdvancedSearchController($scope, $log, filterOptions) {
@@ -99,7 +103,9 @@
       'restrict': 'E',
       'templateUrl': '/tools/static/resources/components/reservations/advanced-search.directive.html',
       'scope': {
-        'showModal': '='
+        'showModal': '=',
+        'reservationStartTime': '@',
+        'reservationEndTime': '@'
       },
       'controller': AdvancedSearchController,
       'link': link,
@@ -143,10 +149,11 @@
         ctrl.selectedConditions = [];
         ctrl.index = 0;
 
-        var options = angular.fromJson(response.data[0].fields.filter_option);
+        var options = angular.fromJson(response.data.filter_option);
 
-        for(var i in options.filter_option) {
-          var option = options.filter_option[i]
+        for(var i in options) {
+          var option = options[i];
+
           var c = new Condition();
           c.setGroup(option.group);
           c.setLabel(option.label);
@@ -171,6 +178,7 @@
         ctrl.conditions.push('<search-condition selected-conditions="vm.selectedConditions" index="' + ctrl.index + '" remove="vm.removeCondition({index:' + ctrl.index + '})"></search-condition>');
         ++ctrl.index;
         draw();
+        ctrl.currentOption = '';
       }
 
       function removeCondition(e) {
