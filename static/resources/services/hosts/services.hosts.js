@@ -14,7 +14,8 @@
       'getByID': getByID,
           'add': add,
        'update': update,
-       'remove': remove
+       'remove': remove,
+      'grouped': grouped
     };
     
     function listAll(hostName) {
@@ -39,6 +40,10 @@
     
     function remove(id) {
       return false;
+    }
+
+    function grouped(fieldName, fieldValue) {
+      return $http.get('/tools/group/hosts/' + fieldName + '/');
     }
   }
   

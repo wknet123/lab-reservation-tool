@@ -9,7 +9,7 @@ from django.views.decorators.http import require_http_methods
 
 from django.utils import timezone
 
-from django.db.models import Q
+from django.db.models import Q, Count
 
 from .models import User, Reservation, Host, Nic, Hba, Profile
 
@@ -171,7 +171,11 @@ def list_host(request):
 def get_host_from_list(results):
     hosts = []
     for r in results:
-        hosts.append(r.host_name)
+        if hasattr(r, 'host_name'):
+            hosts.append(r.host_name)
+        elif hasattr(r, 'host') and hasattr(r.host, 'host_name'):
+            hosts.append(r.host.host_name)
+
     return set(hosts)
 
 
@@ -202,11 +206,7 @@ def list_hba(request):
         return HttpResponseNotAllowed("Please provide host name as filter.")
 
     filter_options = get_profile_by_target('hba', int(session_user_id), host_name)
-    logger.debug(filter_options)
-
     filtered_results = Hba.objects.filter(generate_filter(filter_options))
-
-    logger.debug(filtered_results.query)
 
     return decode_request(filtered_results)
 
@@ -228,18 +228,16 @@ def add_or_update_reservation(request, host_id, user_id):
         if input_end_time < input_start_time :
             return HttpResponseBadRequest("End time can not be earlier than start time.")
 
+        filter_expr = ((Q(reservation_start_time__lte=input_start_time) &
+                        Q(reservation_end_time__gte=input_end_time)) |
+                       (Q(reservation_start_time__gte=input_start_time) &
+                        Q(reservation_end_time__lte=input_end_time)) |
+                       (Q(reservation_end_time__gte=input_start_time) &
+                        Q(reservation_start_time__lte=input_end_time)))
+
         if request.method == 'POST':
             try:
-                other_reservations = Reservation.objects.filter(
-                    host=Host(pk=host_id),
-                ).filter(
-                    (Q(reservation_start_time__lte=input_start_time) &
-                    Q(reservation_end_time__gte=input_end_time)) |
-                    (Q(reservation_start_time__gte=input_start_time) &
-                     Q(reservation_end_time__lte=input_end_time)) |
-                    (Q(reservation_end_time__gte=input_start_time) &
-                     Q(reservation_start_time__lte=input_end_time))
-                )
+                other_reservations = Reservation.objects.filter(host=Host(pk=host_id)).filter(filter_expr)
 
                 if len(other_reservations) > 0:
                     return HttpResponseBadRequest("Already reserved at the same time.")
@@ -260,14 +258,7 @@ def add_or_update_reservation(request, host_id, user_id):
                 other_reservations = Reservation.objects.filter(
                     ~Q(pk=r['reservation_id']),
                     host=Host(pk=host_id),
-                ).filter(
-                    (Q(reservation_start_time__lte=input_start_time) &
-                     Q(reservation_end_time__gte=input_end_time)) |
-                    (Q(reservation_start_time__gte=input_start_time) &
-                     Q(reservation_end_time__lte=input_end_time)) |
-                    (Q(reservation_end_time__gte=input_start_time) &
-                     Q(reservation_start_time__lte=input_end_time))
-                )
+                ).filter(filter_expr)
 
                 if len(other_reservations) > 0:
                     return HttpResponseBadRequest("Already reserved at the same time.")
@@ -291,7 +282,7 @@ def get_or_delete_reservation(request, reservation_id, user_id):
     session_user_id = request.session.get('user_id', 0)
     if session_user_id == 0:
         return HttpResponseForbidden('Please login first.')
-    logger.debug('session_user_id: %d' % (session_user_id))
+    logger.debug('session_user_id: %d' % session_user_id)
 
     if request.method == 'GET':
         try:
@@ -340,7 +331,7 @@ def list_reservations(request, host_id):
 
 def get_user_by_id(user_id):
     try:
-        user=User.objects.get(pk=user_id)
+        user = User.objects.get(pk=user_id)
         return user
     except:
         logger.error('Error occurred while getting user by ID: %d' % (id,))
@@ -404,7 +395,42 @@ def generate_filter(filter_options):
     return reduce(operator.and_, filters)
 
 
+@require_http_methods(["GET"])
+def get_grouped_host(request, field_name, field_value):
+    session_user_id = request.session.get('user_id', 0)
+    if session_user_id == 0:
+        return HttpResponseForbidden('Please login first.')
+
+    hosts = []
+    for host in Host.objects.filter(Q(**{field_name + '__contains': field_value})).values(field_name).annotate(c_grouped=Count(field_name)):
+        hosts.append(host)
+
+    return simple_decode_request(hosts)
 
 
+@require_http_methods(["GET"])
+def get_grouped_nic_driver(request, driver_name):
+    session_user_id = request.session.get('user_id', 0)
+    if session_user_id == 0:
+        return HttpResponseForbidden('Please login first.')
+
+    nics = Nic.objects.filter(nic_driver__contains=driver_name).values('nic_driver').annotate(c_nic_driver=Count('nic_driver'))
+    nic_drivers = []
+    for n in nics:
+        nic_drivers.append(n)
+    return simple_decode_request(nic_drivers)
+
+
+@require_http_methods(["GET"])
+def get_grouped_hba_driver(request, driver_name):
+    session_user_id = request.session.get('user_id', 0)
+    if session_user_id == 0:
+        return HttpResponseForbidden('Please login first.')
+
+    hbas = Hba.objects.filter(hba_driver__contains=driver_name).values('hba_driver').annotate(c_hba_driver=Count('hba_driver'))
+    hba_drivers = []
+    for h in hbas:
+        hba_drivers.append(h)
+    return simple_decode_request(hba_drivers)
 
 

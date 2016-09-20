@@ -142,7 +142,6 @@
 
     function getProfileSuccess(response) {
       var profile = response.data;
-      $log.debug(profile.reservation_start_time);
       vm.reservationStartTime= getDateStr(profile.reservation_start_time);
       vm.reservationEndTime = getDateStr(profile.reservation_end_time, 0, 23);
     }

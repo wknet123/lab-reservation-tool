@@ -5,18 +5,55 @@
     .module('components.reservations')
     .directive('searchCondition', searchCondition);
 
-  SearchConditionController.$inject = ['$log', '$scope'];
+  SearchConditionController.$inject = ['$log', '$scope', 'HostService', 'HbaService', 'NicService'];
 
-  function SearchConditionController($log, $scope) {
+  function SearchConditionController($log, $scope, HostService, HbaService, NicService) {
     var vm = this;
     var index = vm.index;
 
     var c = vm.selectedConditions[index];
 
     vm.label = c.getLabel();
+    vm.fieldName = c.getFieldName();
     vm.fieldValue = c.getFieldValue();
     vm.comparison = c.getComparison();
     vm.relationOp = c.getRelationOp();
+
+    vm.displayMode = 'INPUT';
+
+    var mapping_config = {
+      'location': HostService,
+      'vendor': HostService,
+      'cpu_vendor': HostService,
+      'cpu_model_name': HostService,
+      'model': HostService,
+      'hba_driver': HbaService,
+      'nic_driver': NicService
+    };
+
+    var service = mapping_config[vm.fieldName];
+
+    if(service) {
+      vm.displayMode = 'SELECT';
+      service.grouped(vm.fieldName)
+        .then(getGroupedHostSuccess, getGroupedHostFailed);
+    }
+
+    function getGroupedHostSuccess(response) {
+      var data = response.data || [];
+      vm.optionItems = [];
+      for(var i in data) {
+        vm.optionItems.push(data[i][vm.fieldName]);
+      }
+
+      if(vm.fieldValue === '' && data.length > 0) {
+        vm.fieldValue = vm.optionItems[0];
+      }
+    }
+
+    function getGroupedHostFailed(response) {
+      $log.error('Failed to get grouped host items.')
+    }
 
     $scope.$watch('vm.label', function(current) {
       if(current) {
@@ -45,6 +82,7 @@
         vm.selectedConditions[index] = c;
       }
     });
+
   }
 
   searchCondition.$inject = [];

@@ -4,7 +4,8 @@
     <select class="form-control" ng-model="vm.comparison" ng-options="r for r in ['=', 'LIKE', '!='] track by r"></select>
   </div>
   <div class="col-sm-4" style="padding-left: 0;">
-    <input type="text" class="form-control" ng-model="vm.fieldValue">
+    <input ng-if="vm.displayMode === 'INPUT'" type="text" class="form-control" ng-model="vm.fieldValue">
+    <select ng-if="vm.displayMode === 'SELECT'" class="form-control" ng-options="item for item in vm.optionItems track by item" ng-model="vm.fieldValue"></select>
   </div>
   <div class="col-sm-2" ng-if="(vm.index != vm.selectedConditions.length - 1)" style="padding-left: 0; padding-right: 0;" >
     <select class="form-control" ng-model="vm.relationOp" ng-options="c for c in ['AND'] track by c"></select>

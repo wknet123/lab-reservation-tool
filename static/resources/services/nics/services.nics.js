@@ -10,7 +10,8 @@
   
   function NicService($http, $log) {
     return {
-      'getByHostName': getByHostName
+      'getByHostName': getByHostName,
+      'grouped': grouped
     };
     
     function getByHostName(hostName) {
@@ -19,6 +20,10 @@
           'host_name': hostName
         }
       });
+    }
+
+    function grouped() {
+      return $http.get('/tools/group/nics');
     }
   }
   

@@ -13,5 +13,8 @@ urlpatterns = [
     url(r'^reservations/host/(?P<host_id>[0-9]+)$', views.list_reservations),
     url(r'^reservations/(?P<reservation_id>[0-9]+)/user/(?P<user_id>[0-9]+)$', views.get_or_delete_reservation),
     url(r'^reservations/host/(?P<host_id>[0-9]+)/user/(?P<user_id>[0-9]+)$', views.add_or_update_reservation),
-    url(r'^profiles$', views.get_add_or_update_profile)
+    url(r'^profiles$', views.get_add_or_update_profile),
+    url(r'^group/hosts/(?P<field_name>\w+)/(?P<field_value>[\w\-]*)$', views.get_grouped_host),
+    url(r'^group/nics/(?P<driver_name>\w*)$', views.get_grouped_nic_driver),
+    url(r'^group/hbas/(?P<driver_name>\w*)$', views.get_grouped_hba_driver),
 ]

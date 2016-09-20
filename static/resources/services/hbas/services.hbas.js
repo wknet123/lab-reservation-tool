@@ -9,7 +9,8 @@
 
   function HbaService($http, $log) {
     return {
-      'getByHostName': getByHostName
+      'getByHostName': getByHostName,
+      'grouped': grouped
     };
     function getByHostName(hostName) {
       return $http.get('/tools/hbas', {
@@ -17,6 +18,10 @@
           'host_name': hostName
         }
       });
+    }
+
+    function grouped() {
+      return $http.get('/tools/group/hbas');
     }
   }
 })();
