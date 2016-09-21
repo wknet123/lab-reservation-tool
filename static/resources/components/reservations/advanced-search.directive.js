@@ -7,6 +7,7 @@
     .directive('advancedSearch', advancedSearch);
   function filterOptions() {
     var values = [
+      {'name': 'group', 'label': 'Group', 'group': {'name': 'host', 'label': 'Host'}},
       {'name': 'location', 'label': 'Location', 'group': {'name': 'host', 'label': 'Host'}},
       {'name': 'vendor', 'label': 'Vendor', 'group': {'name': 'host', 'label': 'Host'}},
       {'name': 'model' , 'label': 'Model' , 'group': {'name': 'host', 'label': 'Host'}},

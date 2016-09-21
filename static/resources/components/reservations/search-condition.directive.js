@@ -22,11 +22,13 @@
     vm.displayMode = 'INPUT';
 
     var mapping_config = {
+      'group': HostService,
       'location': HostService,
       'vendor': HostService,
       'cpu_vendor': HostService,
       'cpu_model_name': HostService,
       'model': HostService,
+      'memory': HostService,
       'hba_driver': HbaService,
       'nic_driver': NicService
     };

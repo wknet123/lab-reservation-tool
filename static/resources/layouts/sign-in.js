@@ -13,11 +13,20 @@
   function SignInController($scope, $location, UserService, $log) {
     var vm = this;
     vm.signIn = signIn;
+    vm.signInKeyPress = signInKeyPress;
+
     vm.signInTIP = false;
     function signIn() {
       vm.signInTIP = true;
       UserService.login(vm.username, vm.password)
-      .then(LoginSuccess, LoginFailed);
+        .then(LoginSuccess, LoginFailed);
+    }
+
+    function signInKeyPress($event) {
+      var keyCode = $event.which || $event.keyCode;
+      if(keyCode === 13) {
+        vm.signIn();
+      }
     }
     
     function LoginSuccess(response) {
