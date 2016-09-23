@@ -60,24 +60,20 @@ def index(request):
 
 
 Server = "ldaps://ldap1-pek2.eng.vmware.com"
-Base = "uid=kunw,ou=people,dc=vmware,dc=com"
+Base = "uid=%s,ou=people,dc=vmware,dc=com"
 Scope = ldap.SCOPE_SUBTREE
-Dn = "uid=%s,ou=people,dc=vmware,dc=com"
 Filter = "(&(objectClass=*))"
 
 
 def ldap_auth(username, password):
     try:
-        dn, secret = Dn % (username,), password
-
         filter_attrs = ["uid", "cn", "mail"]
-
         l = ldap.initialize(Server)
         l.set_option(ldap.OPT_REFERRALS, 0)
         l.protocol_version = 3
-        l.simple_bind_s(dn, secret)
+        l.simple_bind_s(Base % username, password)
 
-        r = l.search(Base, Scope, Filter, filter_attrs)
+        r = l.search(Base % username, Scope, Filter, filter_attrs)
         _, user = l.result(r, 60)
         _, attrs = user[0]
 
