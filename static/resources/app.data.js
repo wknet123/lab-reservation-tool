@@ -13,6 +13,6 @@
         'id': '2',
         'description': 'Release'
       }
-    ])
-  
+    ]);
+
 })();

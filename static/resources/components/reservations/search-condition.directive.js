@@ -1,13 +1,13 @@
 (function() {
   'use strict';
 
-  angular
+  var app = angular
     .module('components.reservations')
     .directive('searchCondition', searchCondition);
 
-  SearchConditionController.$inject = ['$log', '$scope', 'HostService', 'HbaService', 'NicService'];
+  SearchConditionController.$inject = ['$log', '$scope', '$rootScope'];
 
-  function SearchConditionController($log, $scope, HostService, HbaService, NicService) {
+  function SearchConditionController($log, $scope, $rootScope) {
     var vm = this;
     var index = vm.index;
 
@@ -21,40 +21,21 @@
 
     vm.displayMode = 'INPUT';
 
-    var mapping_config = {
-      'group': HostService,
-      'location': HostService,
-      'vendor': HostService,
-      'cpu_vendor': HostService,
-      'cpu_model_name': HostService,
-      'model': HostService,
-      'memory': HostService,
-      'hba_driver': HbaService,
-      'nic_driver': NicService
-    };
+    var mapping_config = [
+      'group', 'location', 'vendor', 'cpu_vendor', 'cpu_model_name', 'model',
+      'memory', 'hba_driver', 'nic_driver'
+    ];
 
-    var service = mapping_config[vm.fieldName];
-
-    if(service) {
+    if(mapping_config.indexOf(vm.fieldName) >= 0) {
       vm.displayMode = 'SELECT';
-      service.grouped(vm.fieldName)
-        .then(getGroupedHostSuccess, getGroupedHostFailed);
-    }
-
-    function getGroupedHostSuccess(response) {
-      var data = response.data || [];
+      var data = $rootScope[vm.fieldName] || [];
       vm.optionItems = [];
       for(var i in data) {
         vm.optionItems.push(data[i][vm.fieldName]);
       }
-
       if(vm.fieldValue === '' && data.length > 0) {
         vm.fieldValue = vm.optionItems[0];
       }
-    }
-
-    function getGroupedHostFailed(response) {
-      $log.error('Failed to get grouped host items.')
     }
 
     $scope.$watch('vm.label', function(current) {

@@ -10,5 +10,4 @@
       'services.nics',
       'services.hbas'
     ]);
-  
 })();
