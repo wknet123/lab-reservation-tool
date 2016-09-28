@@ -1,7 +1,7 @@
 (function() {
   'use strict';
 
-  var app = angular
+  angular
     .module('components.reservations')
     .directive('searchCondition', searchCondition);
 

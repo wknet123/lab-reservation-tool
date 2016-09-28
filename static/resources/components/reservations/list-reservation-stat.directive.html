@@ -1,0 +1,44 @@
+<div class="modal fade" id="modalListReservationStat" tabindex="-1"  role="dialog" data-backdrop="static">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+        <h4 class="modal-title">// vm.modalTitle //</h4>
+      </div>
+      <div class="modal-body">
+        <form class="form-inline">
+          <div class="form-group">
+            <label>From</label>
+            <datetime-picker picker-id="fromSearchDatetimePicker" selected-datetime="vm.startTime" clearable="true"></datetime-picker>
+          </div>
+          <div class="form-group">
+            <label>To</label>
+            <datetime-picker picker-id="toSearchDatetimePicker" selected-datetime="vm.endTime" clearable="true"></datetime-picker>
+          </div>
+          <div class="form-group">
+            <input type="checkbox" ng-model="vm.isReserved">
+            <label>Reserved</label>
+          </div>
+          <button type="button" class="btn btn-default pull-right" ng-click="vm.retrieve()"><span class="glyphicon glyphicon-search"></span></button>
+        </form>
+        <table class="table" style="margin-bottom: 0;">
+          <thead>
+            <th width="50%">Host Name</th><th width="50%">Reservation Count</th>
+          </thead>
+        </table>
+        <div style="height: 300px; overflow-y: scroll;">
+          <table class="table">
+            <tbody>
+              <tr ng-repeat="rs in vm.reservationStat">
+                <td width="50%"><a href="javascript:void(0);" ng-click="vm.redirectToHost(rs.host_name)">// rs.host_name //</a></td><td width="50%">// rs.reservation_count //</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-primary" id="btnOk" data-dismiss="modal">OK</button>
+      </div>
+    </div><!-- /.modal-content -->
+  </div><!-- /.modal-dialog -->
+</div><!-- /.modal -->

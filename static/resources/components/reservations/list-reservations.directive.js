@@ -19,6 +19,7 @@
     vm.getReservations = getReservations;
     vm.searchHost = searchHost;
     vm.toAdvancedSearch = toAdvancedSearch;
+    vm.toListReservationStat = toListReservationStat;
 
     vm.retrieve('');
 
@@ -38,6 +39,12 @@
     });
 
     vm.reloadProfiles = reloadProfiles;
+
+    $scope.$watch('vm.hostName', function(current) {
+      if(current) {
+        vm.retrieve(current);
+      }
+    });
 
     function toAddOrUpdateReservation(reservationId, targetType) {
       vm.targetType = targetType;
@@ -68,6 +75,11 @@
       if (vm.hosts && vm.hosts.length > 0) {
         vm.selectedHost = vm.hosts[0];
         vm.getReservations();
+      }else{
+        $scope.$emit('modalTitle', 'No found in search');
+        $scope.$emit('modalMessage', 'No host was found with current filter options.');
+        $scope.$emit('raiseError', true);
+
       }
     }
 
@@ -122,6 +134,10 @@
 
     function toAdvancedSearch() {
       vm.showAdvancedSearch = true;
+    }
+
+    function toListReservationStat() {
+      vm.showListReservationStat = true;
     }
 
     function getDateStr(date, deltaOfDays, deltaOfHours) {

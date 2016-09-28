@@ -9,7 +9,7 @@ from django.views.decorators.http import require_http_methods
 
 from django.utils import timezone
 
-from django.db.models import Q, Count
+from django.db.models import Q, Count, Max
 
 from .models import User, Reservation, Host, Nic, Hba, Profile
 
@@ -50,7 +50,9 @@ def simple_decode_request(raw_data):
     return HttpResponse(json.dumps(raw_data, cls=SimpleEncoder), content_type='application/json')
 
 
-def covert_datetime(datetime_str):
+def convert_datetime(datetime_str, *default_date):
+    if datetime_str == '' and len(default_date) > 0:
+        datetime_str = default_date[0]
     t = datetime.strptime(datetime_str, '%Y-%m-%d %H:%M')
     return timezone.make_aware(t, timezone=timezone.get_current_timezone(), is_dst=None)
 
@@ -218,8 +220,8 @@ def add_or_update_reservation(request, host_id, user_id):
 
     if session_user_id == int(user_id):
         r = json.loads(request.body)
-        input_start_time = covert_datetime(r['reservation_start_time'])
-        input_end_time = covert_datetime(r['reservation_end_time'])
+        input_start_time = convert_datetime(r['reservation_start_time'])
+        input_end_time = convert_datetime(r['reservation_end_time'])
 
         if input_end_time < input_start_time :
             return HttpResponseBadRequest("End time can not be earlier than start time.")
@@ -393,23 +395,14 @@ def generate_filter(filter_options):
 
 @require_http_methods(["GET"])
 def get_grouped_host(request, field_name, field_value):
-    session_user_id = request.session.get('user_id', 0)
-    if session_user_id == 0:
-        return HttpResponseForbidden('Please login first.')
-
     hosts = []
     for host in Host.objects.filter(Q(**{field_name + '__contains': field_value})).values(field_name).annotate(c_grouped=Count(field_name)):
         hosts.append(host)
-
     return simple_decode_request(hosts)
 
 
 @require_http_methods(["GET"])
 def get_grouped_nic_driver(request, driver_name):
-    session_user_id = request.session.get('user_id', 0)
-    if session_user_id == 0:
-        return HttpResponseForbidden('Please login first.')
-
     nics = Nic.objects.filter(nic_driver__contains=driver_name).values('nic_driver').annotate(c_nic_driver=Count('nic_driver'))
     nic_drivers = []
     for n in nics:
@@ -419,10 +412,6 @@ def get_grouped_nic_driver(request, driver_name):
 
 @require_http_methods(["GET"])
 def get_grouped_hba_driver(request, driver_name):
-    session_user_id = request.session.get('user_id', 0)
-    if session_user_id == 0:
-        return HttpResponseForbidden('Please login first.')
-
     hbas = Hba.objects.filter(hba_driver__contains=driver_name).values('hba_driver').annotate(c_hba_driver=Count('hba_driver'))
     hba_drivers = []
     for h in hbas:
@@ -430,3 +419,24 @@ def get_grouped_hba_driver(request, driver_name):
     return simple_decode_request(hba_drivers)
 
 
+@require_http_methods(["GET"])
+def get_host_reservation_stat(request):
+    session_user_id = request.session.get('user_id', 0)
+    if session_user_id == 0:
+        return HttpResponseForbidden('Please login first.')
+
+    is_reserved = request.GET.get('is_reserved', 0)
+    start_time = request.GET.get('start_time', '')
+    end_time=request.GET.get('end_time', '')
+
+    hosts = Host.objects\
+        .annotate(reservation_count=Count('reservation'))\
+        .filter(Q(reservation_count__gte=is_reserved) &
+                (Q(reservation__reservation_start_time__gte=convert_datetime(start_time, '2016-01-01 00:00')) &
+                 Q(reservation__reservation_end_time__lt=convert_datetime(end_time, '2036-12-31 23:59')) |
+                 Q(reservation__isnull=True)))
+
+    filtered_results = []
+    for h in hosts:
+        filtered_results.append({'host_name': h.host_name, 'reservation_count': h.reservation_count})
+    return simple_decode_request(filtered_results)

@@ -14,7 +14,8 @@
        'update': update,
        'remove': remove,
       'listAll': listAll,
- 'getReservationByID': getReservationByID
+ 'getReservationByID': getReservationByID,
+ 'getReservationStat': getReservationStat
     };
 
     function add(reservation, hostId, userId) {
@@ -44,6 +45,16 @@
     function getReservationByID(reservationId, userId) {
       return $http.get('/tools/reservations/' + reservationId + '/user/' + userId);
     }
+
+    function getReservationStat(isReserved, startTime, endTime) {
+      return $http.get('/tools/reservations/host/stat', {
+        'params': {
+          'is_reserved': isReserved,
+          'start_time' : startTime,
+          'end_time': endTime
+        }
+      });
+    }
   }
-  
+
 })();

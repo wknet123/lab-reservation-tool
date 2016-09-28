@@ -2,7 +2,7 @@
   
   'use strict';
   
-  var app = angular
+  angular
     .module('lab.reservation.tool', [
       'ngRoute',
       'ngSanitize',

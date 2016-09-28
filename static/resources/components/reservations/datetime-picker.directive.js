@@ -20,7 +20,9 @@
       'scope': {
         'pickerId': '@',
         'selectedDatetime': '=',
-        'customClass': '@'
+        'customClass': '@',
+        'placeHolder': '@',
+        'clearable': '@'
       },
       'link': link,
       'controller': DatetimePickerController,
@@ -34,9 +36,13 @@
       element.find('#' + ctrl.pickerId).datetimepicker({
         format: 'YYYY-MM-DD HH:mm',
         ignoreReadonly: true,
-        showClose: true
+        showClose: true,
+        showClear: Boolean(ctrl.clearable)
 	    });
 	    element.find('#' + ctrl.pickerId).on('dp.change', function(e) {
+	      if (e.date === '-') {
+	        e.date = '';
+	      }
 	      scope.$apply(function() {
           ctrl.selectedDatetime = $filter('dateL')(e.date, 'YYYY-MM-DD HH:mm');
         });
@@ -44,6 +50,12 @@
           'pickerId': ctrl.pickerId,
           'datetime': ctrl.selectedDatetime
         });
+      });
+
+      scope.$watch('vm.selectedDatetime', function(current) {
+        if(current && current == '-') {
+          ctrl.selectedDatetime = '';
+        }
       });
     }
   }
