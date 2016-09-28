@@ -9,7 +9,7 @@ from django.views.decorators.http import require_http_methods
 
 from django.utils import timezone
 
-from django.db.models import Q, Count, Max
+from django.db.models import Q, Count, F, Sum, FloatField
 
 from .models import User, Reservation, Host, Nic, Hba, Profile
 
@@ -428,15 +428,27 @@ def get_host_reservation_stat(request):
     is_reserved = request.GET.get('is_reserved', 0)
     start_time = request.GET.get('start_time', '')
     end_time=request.GET.get('end_time', '')
+    days = request.GET.get('days', 0)
 
     hosts = Host.objects\
-        .annotate(reservation_count=Count('reservation'))\
+        .select_related()\
+        .values('host_name',
+                'reservation__reservation_start_time',
+                'reservation__reservation_end_time')\
+        .annotate(
+            reservation_count=Count('reservation__id'),
+            usage=Sum(F('reservation__reservation_end_time')-F('reservation__reservation_start_time'), output_field=FloatField())
+                  /(timedelta(days=int(days)).total_seconds() * 1000 * 1000))\
         .filter(Q(reservation_count__gte=is_reserved) &
                 (Q(reservation__reservation_start_time__gte=convert_datetime(start_time, '2016-01-01 00:00')) &
                  Q(reservation__reservation_end_time__lt=convert_datetime(end_time, '2036-12-31 23:59')) |
-                 Q(reservation__isnull=True)))
+                 Q(reservation__isnull=True)))\
+        .order_by('-usage')
 
     filtered_results = []
     for h in hosts:
-        filtered_results.append({'host_name': h.host_name, 'reservation_count': h.reservation_count})
+        str_usage = '-'
+        if h['usage'] and int(days) > 0:
+            str_usage =  '{:.2%}'.format(h['usage'])
+        filtered_results.append({'host_name': h['host_name'], 'reservation_count': h['reservation_count'], 'usage': str_usage})
     return simple_decode_request(filtered_results)

@@ -47,7 +47,7 @@
 
         var now = new Date();
         ctrl.reservation.reservation_start_time = $filter('dateL')(now, 'YYYY-MM-DD 00:00');
-        ctrl.reservation.reservation_end_time = $filter('dateL')(now, 'YYYY-MM-DD 23:00');
+        ctrl.reservation.reservation_end_time = $filter('dateL')(now, 'YYYY-MM-DD 23:59');
         ctrl.reservation.timeRange = ctrl.reservation.reservation_start_time + ' - ' + ctrl.reservation.reservation_end_time;
 
         switch(ctrl.targetType) {

@@ -13,15 +13,17 @@
     vm.isReserved = true;
     vm.retrieve = retrieve;
 
+    vm.timeSpanFilter = {'key': 10, 'value': ''};
+    vm.changeTimespan = changeTimespan;
+
     vm.retrieve();
+    vm.changeTimespan();
 
     function retrieve() {
       ReservationService
-        .getReservationStat((vm.isReserved ? 1 : 0), vm.startTime, vm.endTime)
+        .getReservationStat((vm.isReserved ? 1 : 0), vm.startTime, vm.endTime, vm.timeSpanFilter.key)
         .then(getReservationStatSuccess, getReservationStatFailed);
     }
-
-
 
     function getReservationStatSuccess(response) {
       vm.reservationStat = response.data;
@@ -29,6 +31,12 @@
 
     function getReservationStatFailed(response) {
       $log.error('Failed to get reservation stat.');
+    }
+
+    function changeTimespan() {
+      var now = new Date();
+      vm.endTime = moment(now).format('YYYY-MM-DD 23:59');
+      vm.startTime = moment(now).add(-vm.timeSpanFilter.key, 'days').format('YYYY-MM-DD 00:00');
     }
   }
 
@@ -62,6 +70,7 @@
       function redirectToHost(hostName) {
         ctrl.hostName = hostName;
         element.find('#modalListReservationStat').modal('hide');
+        ctrl.showModal = false;
       }
     }
   }

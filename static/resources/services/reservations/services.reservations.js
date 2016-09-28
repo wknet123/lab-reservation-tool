@@ -46,12 +46,13 @@
       return $http.get('/tools/reservations/' + reservationId + '/user/' + userId);
     }
 
-    function getReservationStat(isReserved, startTime, endTime) {
+    function getReservationStat(isReserved, startTime, endTime, days) {
       return $http.get('/tools/reservations/host/stat', {
         'params': {
           'is_reserved': isReserved,
           'start_time' : startTime,
-          'end_time': endTime
+          'end_time': endTime,
+          'days': days
         }
       });
     }

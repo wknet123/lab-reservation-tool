@@ -16,6 +16,12 @@
             <datetime-picker picker-id="toSearchDatetimePicker" selected-datetime="vm.endTime" clearable="true"></datetime-picker>
           </div>
           <div class="form-group">
+            <label>Usage</label>
+            <select class="form-control" ng-change="vm.changeTimespan()" ng-model="vm.timeSpanFilter" ng-options="u.value for u in [{'key': 0, 'value': '---Timespan Filter---'}, {'key': 1
+            , 'value': 'Recent 1 day'}, {'key': 10, 'value': 'Recent 10 days'}, {'key': 30, 'value': 'Recent 1 month'}, {'key': 90, 'value': 'Recent 3 months'}] track by u.key">
+            </select>
+          </div>
+          <div class="form-group">
             <input type="checkbox" ng-model="vm.isReserved">
             <label>Reserved</label>
           </div>
@@ -23,14 +29,18 @@
         </form>
         <table class="table" style="margin-bottom: 0;">
           <thead>
-            <th width="50%">Host Name</th><th width="50%">Reservation Count</th>
+            <th width="50%">Host Name</th>
+            <th width="25%">Reservation Count</th>
+            <th width="25%">Usage</th>
           </thead>
         </table>
         <div style="height: 300px; overflow-y: scroll;">
           <table class="table">
             <tbody>
               <tr ng-repeat="rs in vm.reservationStat">
-                <td width="50%"><a href="javascript:void(0);" ng-click="vm.redirectToHost(rs.host_name)">// rs.host_name //</a></td><td width="50%">// rs.reservation_count //</td>
+                <td width="50%"><a href="javascript:void(0);" ng-click="vm.redirectToHost(rs.host_name)">// rs.host_name //</a></td>
+                <td width="25%">// rs.reservation_count //</td>
+                <td width="25%">// rs.usage //</td>
               </tr>
             </tbody>
           </table>
