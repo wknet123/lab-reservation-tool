@@ -76,10 +76,10 @@
         vm.selectedHost = vm.hosts[0];
         vm.getReservations();
       }else{
+        vm.selectedHost = null;
         $scope.$emit('modalTitle', 'No found in search');
         $scope.$emit('modalMessage', 'No host was found with current filter options.');
         $scope.$emit('raiseError', true);
-
       }
     }
 
