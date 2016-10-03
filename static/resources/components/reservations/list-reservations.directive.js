@@ -62,6 +62,7 @@
     }
 
     function retrieve(hostName) {
+      vm.searchHostName = hostName;
       HostService.listAll(hostName)
         .then(listHostsSuccess, listHostsFailed);
     }

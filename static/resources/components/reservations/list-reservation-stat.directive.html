@@ -16,16 +16,16 @@
             <datetime-picker picker-id="toSearchDatetimePicker" selected-datetime="vm.endTime" clearable="true"></datetime-picker>
           </div>
           <div class="form-group">
-            <label>Usage</label>
-            <select class="form-control" ng-change="vm.changeTimespan()" ng-model="vm.timeSpanFilter" ng-options="u.value for u in [{'key': 0, 'value': '---Timespan Filter---'}, {'key': 1
-            , 'value': 'Recent 1 day'}, {'key': 10, 'value': 'Recent 10 days'}, {'key': 30, 'value': 'Recent 1 month'}, {'key': 90, 'value': 'Recent 3 months'}] track by u.key">
+            <label></label>
+            <select class="form-control" ng-change="vm.changeTimespan()" ng-model="vm.timeSpanFilter" ng-options="u.value for u in [{'key': 1, 'value': 'Recent 1 day'},
+             {'key': 10, 'value': 'Recent 10 days'}, {'key': 30, 'value': 'Recent 1 month'}, {'key': 90, 'value': 'Recent 3 months'}] track by u.key">
             </select>
           </div>
           <div class="form-group">
             <input type="checkbox" ng-model="vm.isReserved">
             <label>Reserved</label>
           </div>
-          <button type="button" class="btn btn-default pull-right" ng-click="vm.retrieve()"><span class="glyphicon glyphicon-search"></span></button>
+          <button type="button" class="btn btn-link pull-right" ng-click="vm.retrieve()"><span class="glyphicon glyphicon-search"></span></button>
         </form>
         <table class="table" style="margin-bottom: 0;">
           <thead>
@@ -45,6 +45,13 @@
             </tbody>
           </table>
         </div>
+        <table class="table" style="margin-bottom: 0;">
+          <thead>
+            <th width="50%"></th>
+            <th width="25%"></th>
+            <th width="25%">Count: // vm.reservationStat.length // item(s).</th>
+          </thead>
+        </table>
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-primary" id="btnOk" data-dismiss="modal">OK</button>

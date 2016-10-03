@@ -5,44 +5,17 @@
     .module('components.reservations')
     .directive('listReservationStat', listReservationStat);
 
-  ListReservationStatController.$inject = ['ReservationService', '$log'];
+  ListReservationStatController.$inject = ['$log'];
 
-  function ListReservationStatController(ReservationService, $log) {
+  function ListReservationStatController($log) {
     var vm = this;
     vm.modalTitle = "Host Reservation Stat"
     vm.isReserved = true;
-    vm.retrieve = retrieve;
-
-    vm.timeSpanFilter = {'key': 10, 'value': ''};
-    vm.changeTimespan = changeTimespan;
-
-    vm.retrieve();
-    vm.changeTimespan();
-
-    function retrieve() {
-      ReservationService
-        .getReservationStat((vm.isReserved ? 1 : 0), vm.startTime, vm.endTime, vm.timeSpanFilter.key)
-        .then(getReservationStatSuccess, getReservationStatFailed);
-    }
-
-    function getReservationStatSuccess(response) {
-      vm.reservationStat = response.data;
-    }
-
-    function getReservationStatFailed(response) {
-      $log.error('Failed to get reservation stat.');
-    }
-
-    function changeTimespan() {
-      var now = new Date();
-      vm.endTime = moment(now).format('YYYY-MM-DD 23:59');
-      vm.startTime = moment(now).add(-vm.timeSpanFilter.key, 'days').format('YYYY-MM-DD 00:00');
-    }
   }
 
-  listReservationStat.$inject = [];
+  listReservationStat.$inject = ['ReservationService', '$log'];
 
-  function listReservationStat() {
+  function listReservationStat(ReservationService, $log) {
     var directive = {
       'restrict': 'E',
       'templateUrl': '/tools/static/resources/components/reservations/list-reservation-stat.directive.html',
@@ -58,6 +31,17 @@
     return directive;
 
     function link(scope, element, attrs, ctrl) {
+      element.find('#modalListReservationStat').on('show.bs.modal', function() {
+
+        ctrl.retrieve = retrieve;
+        ctrl.redirectToHost = redirectToHost;
+        ctrl.changeTimespan = changeTimespan;
+
+        ctrl.timeSpanFilter = {'key': 10, 'value': ''};
+        ctrl.changeTimespan();
+        ctrl.retrieve();
+      });
+
       scope.$watch('vm.showModal', function(current) {
         if(current) {
           element.find('#modalListReservationStat').modal('show');
@@ -65,8 +49,26 @@
         }
       });
 
+      function retrieve() {
+        ReservationService
+          .getReservationStat((ctrl.isReserved ? 1 : 0), ctrl.startTime, ctrl.endTime, ctrl.timeSpanFilter.key)
+          .then(getReservationStatSuccess, getReservationStatFailed);
+      }
 
-      ctrl.redirectToHost = redirectToHost;
+      function getReservationStatSuccess(response) {
+        ctrl.reservationStat = response.data;
+      }
+
+      function getReservationStatFailed(response) {
+        $log.error('Failed to get reservation stat.');
+      }
+
+      function changeTimespan() {
+        var now = new Date();
+        ctrl.endTime = moment(now).format('YYYY-MM-DD 23:59');
+        ctrl.startTime = moment(now).add(-ctrl.timeSpanFilter.key, 'days').format('YYYY-MM-DD 00:00');
+      }
+
       function redirectToHost(hostName) {
         ctrl.hostName = hostName;
         element.find('#modalListReservationStat').modal('hide');

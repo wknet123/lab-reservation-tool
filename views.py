@@ -7,15 +7,15 @@ from django.core.serializers.json import DjangoJSONEncoder
 
 from django.views.decorators.http import require_http_methods
 
-from django.utils import timezone
-
-from django.db.models import Q, Count, F, Sum, FloatField
+from django.db.models import Q, Count, F, Sum, FloatField, IntegerField, Max
 
 from .models import User, Reservation, Host, Nic, Hba, Profile
 
 import json
 
 from datetime import datetime, timedelta
+
+import time
 
 import ldap
 import operator
@@ -24,13 +24,13 @@ import logging
 
 from collections import OrderedDict
 
+
 logger = logging.getLogger(__name__)
 
 
 def decode_request(obj, **kwargs):
     raw_data = serializers.serialize('python', obj)
     if kwargs:
-        print kwargs['others']
         i = 0
         for r in raw_data:
             for v in r.items():
@@ -53,9 +53,9 @@ def simple_decode_request(raw_data):
 def convert_datetime(datetime_str, *default_date):
     if datetime_str == '' and len(default_date) > 0:
         datetime_str = default_date[0]
-    t = datetime.strptime(datetime_str, '%Y-%m-%d %H:%M')
-    return timezone.make_aware(t, timezone=timezone.get_current_timezone(), is_dst=None)
-
+    d = datetime.strptime(datetime_str, '%Y-%m-%d %H:%M')
+    logger.debug('Date is converted to %s' % d)
+    return d
 
 def index(request):
     return render(request, 'tools/index.htm')
@@ -88,9 +88,7 @@ def ldap_auth(username, password):
                          email=attrs['mail'][0])
                 u.save()
                 last_inserted_user = User.objects.get(username=username)
-
                 now = datetime.now().date()
-
                 Profile.objects.create(
                     user=last_inserted_user,
                     filter_option=[],
@@ -119,6 +117,7 @@ def login(request):
         return HttpResponseBadRequest()
 
     user = ldap_auth(username, password)
+
     if user:
         request.session['user_id'] = user.pk
         request.session['username'] = username
@@ -428,27 +427,37 @@ def get_host_reservation_stat(request):
     is_reserved = request.GET.get('is_reserved', 0)
     start_time = request.GET.get('start_time', '')
     end_time=request.GET.get('end_time', '')
-    days = request.GET.get('days', 0)
-
-    hosts = Host.objects\
-        .select_related()\
-        .values('host_name',
-                'reservation__reservation_start_time',
-                'reservation__reservation_end_time')\
-        .annotate(
-            reservation_count=Count('reservation__id'),
-            usage=Sum(F('reservation__reservation_end_time')-F('reservation__reservation_start_time'), output_field=FloatField())
-                  /(timedelta(days=int(days)).total_seconds() * 1000 * 1000))\
-        .filter(Q(reservation_count__gte=is_reserved) &
-                (Q(reservation__reservation_start_time__gte=convert_datetime(start_time, '2016-01-01 00:00')) &
-                 Q(reservation__reservation_end_time__lt=convert_datetime(end_time, '2036-12-31 23:59')) |
-                 Q(reservation__isnull=True)))\
-        .order_by('-usage')
+    days = request.GET.get('days', 1)
+    
+    if int(is_reserved):
+        hosts = Reservation.objects\
+                .prefetch_related('host') \
+                .values('host__host_name')\
+                .annotate(
+                    host_name=F('host__host_name'),
+                    reservation_count=Count('host'),
+                    usage=Sum(F('reservation_end_time') - F('reservation_start_time'), output_field=FloatField())
+                      /(time.time() + timedelta(days=int(days)).total_seconds() * 1000 * 1000))\
+                .filter(
+                    Q(reservation_start_time__gte=convert_datetime(start_time, '2016-01-01 00:00')) &
+                    Q(reservation_end_time__lte=convert_datetime(end_time, '2036-12-31 23:59'))
+                )\
+                .order_by('-reservation_count')
+    else:
+        hosts = Host.objects\
+                .select_related()\
+                .values('host_name')\
+                .filter(reservation__host_id__isnull=True)
 
     filtered_results = []
     for h in hosts:
-        str_usage = '-'
-        if h['usage'] and int(days) > 0:
-            str_usage =  '{:.2%}'.format(h['usage'])
-        filtered_results.append({'host_name': h['host_name'], 'reservation_count': h['reservation_count'], 'usage': str_usage})
+        if 'reservation_count' not in h:
+            h['reservation_count'] = 0
+        if 'usage' not in h:
+            h['usage'] = 0
+        str_usage = '{:.1%}'.format(round(h['usage'], 2))
+        filtered_results.append({
+            'host_name': h['host_name'],
+            'reservation_count': h['reservation_count'],
+            'usage': str_usage})
     return simple_decode_request(filtered_results)
