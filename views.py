@@ -7,7 +7,7 @@ from django.core.serializers.json import DjangoJSONEncoder
 
 from django.views.decorators.http import require_http_methods
 
-from django.db.models import Q, Count, F, Sum, FloatField, IntegerField, Max
+from django.db.models import Q, Count, F, Sum, FloatField, IntegerField
 
 from .models import User, Reservation, Host, Nic, Hba, Profile
 
@@ -43,7 +43,7 @@ def decode_request(obj, **kwargs):
 
 class SimpleEncoder(json.JSONEncoder):
     def default(self, o):
-        return o.__dict__
+        return sorted(o.__dict__.items(), key=lambda t: t[0])
 
 
 def simple_decode_request(raw_data):
@@ -428,7 +428,7 @@ def get_host_reservation_stat(request):
     start_time = request.GET.get('start_time', '')
     end_time=request.GET.get('end_time', '')
     days = request.GET.get('days', 1)
-    
+
     if int(is_reserved):
         hosts = Reservation.objects\
                 .prefetch_related('host') \
@@ -447,17 +447,15 @@ def get_host_reservation_stat(request):
         hosts = Host.objects\
                 .select_related()\
                 .values('host_name')\
+                .annotate(
+                    reservation_count=Sum(0, output_field=IntegerField()),
+                    usage=Sum(0, output_field=FloatField()))\
                 .filter(reservation__host_id__isnull=True)
 
     filtered_results = []
     for h in hosts:
-        if 'reservation_count' not in h:
-            h['reservation_count'] = 0
-        if 'usage' not in h:
-            h['usage'] = 0
-        str_usage = '{:.1%}'.format(round(h['usage'], 2))
         filtered_results.append({
             'host_name': h['host_name'],
             'reservation_count': h['reservation_count'],
-            'usage': str_usage})
+            'usage': '{:.2%}'.format(h['usage'])})
     return simple_decode_request(filtered_results)
