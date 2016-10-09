@@ -18,7 +18,7 @@
           <div class="form-group">
             <label></label>
             <select class="form-control" ng-change="vm.changeTimespan()" ng-model="vm.timeSpanFilter" ng-options="u.value for u in [{'key': 1, 'value': 'Recent 1 day'},
-             {'key': 10, 'value': 'Recent 10 days'}, {'key': 30, 'value': 'Recent 1 month'}, {'key': 90, 'value': 'Recent 3 months'}] track by u.key">
+             {'key': 10, 'value': 'Recent 10 days'}, {'key': 30, 'value': 'Recent 1 month'}, {'key': 90, 'value': 'Recent 3 months'}, {'key': -1, 'value': 'Custom day(s)'}] track by u.key">
             </select>
           </div>
           <div class="form-group">

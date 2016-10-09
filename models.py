@@ -73,7 +73,7 @@ class Profile(models.Model):
 
 class Reservation(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
-    host = models.ForeignKey(Host, on_delete= models.CASCADE)
+    host = models.ForeignKey(Host, on_delete=models.CASCADE)
     reservation_start_time = models.DateTimeField()
     reservation_end_time = models.DateTimeField()
 

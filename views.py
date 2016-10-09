@@ -57,6 +57,7 @@ def convert_datetime(datetime_str, *default_date):
     logger.debug('Date is converted to %s' % d)
     return d
 
+
 def index(request):
     return render(request, 'tools/index.htm')
 
@@ -425,9 +426,15 @@ def get_host_reservation_stat(request):
         return HttpResponseForbidden('Please login first.')
 
     is_reserved = request.GET.get('is_reserved', 0)
-    start_time = request.GET.get('start_time', '')
-    end_time=request.GET.get('end_time', '')
+    start_time = convert_datetime(request.GET.get('start_time', ''), '2016-01-01 00:00')
+    end_time = convert_datetime(request.GET.get('end_time', ''), '2036-12-31 23:59')
     days = request.GET.get('days', 1)
+
+    diff_time = end_time - start_time
+    diff_days = diff_time.days
+
+    if days != diff_days:
+        days = diff_days
 
     if int(is_reserved):
         hosts = Reservation.objects\
@@ -439,8 +446,8 @@ def get_host_reservation_stat(request):
                     usage=Sum(F('reservation_end_time') - F('reservation_start_time'), output_field=FloatField())
                       /(time.time() + timedelta(days=int(days)).total_seconds() * 1000 * 1000))\
                 .filter(
-                    Q(reservation_start_time__gte=convert_datetime(start_time, '2016-01-01 00:00')) &
-                    Q(reservation_end_time__lte=convert_datetime(end_time, '2036-12-31 23:59'))
+                    Q(reservation_start_time__gte=start_time) &
+                    Q(reservation_end_time__lte=end_time)
                 )\
                 .order_by('-reservation_count')
     else:
